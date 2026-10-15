@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Recall">
+<title>Free Recall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: 'Zen Kaku Gothic New', system-ui, sans-serif;
+    background: #000;
+    color: #fff;
+    overflow: hidden;
+  }
+
+  /* ===== Latar video ===== */
+  .bg { position: fixed; inset: 0; z-index: 0; background: #000; }
+  .bgset { position: absolute; inset: 0; display: none; }
+  .bgset.active { display: block; }
+  .bgset video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: none;
+  }
+  .bgset::after {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(0, 0, 0, 0.15);
+    pointer-events: none;
+  }
+  @media (orientation: portrait) {
+    .bgset.active .v-potret { display: block; }
+  }
+  @media (orientation: landscape) {
+    .bgset.active .v-land { display: block; }
+  }
+
+  /* ===== Tombol ganti background (pojok kanan atas) ===== */
+  .btn-bg {
+    position: fixed; top: 12px; right: 12px; z-index: 3;
+    width: 36px; height: 36px; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid #ffd166;
+    box-shadow: 0 0 6px #ffd166;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  .btn-bg svg { width: 18px; height: 18px; stroke: #ffd166; fill: none; stroke-width: 2; }
+
+  /* ===== Konten di tengah layar ===== */
+  .wrap {
+    position: fixed; inset: 0; z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px 16px 60px;
+    box-sizing: border-box;
+  }
+  .stack {
+    width: min(92vw, 420px);
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    text-align: center;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  }
+  #setup, #latihan, #ringkasan { display: none; width: 100%; }
+
+  textarea, input {
+    width: 100%; box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    font-family: inherit;
+    border-radius: 10px;
+    padding: 10px;
+    outline: none;
+  }
+  textarea {
+    height: 110px; font-size: 15px;
+    resize: none; overflow-y: auto;
+    border: 1px solid #ff5ccf;
+    box-shadow: 0 0 6px #ff5ccf;
+  }
+  #jawab {
+    font-size: 20px; text-align: center; margin-top: 4px;
+    border: 1px solid #5ce1ff;
+    box-shadow: 0 0 6px #5ce1ff;
+  }
+
+  .btn {
+    font-family: inherit; font-size: 15px;
+    padding: 10px 16px; margin: 4px;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    border: 1px solid var(--c);
+    box-shadow: 0 0 6px var(--c);
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  .sisa {
+    font-size: 22px; font-weight: 700;
+    display: inline-block; margin: 6px 0;
+  }
+  @keyframes pop {
+    0%   { transform: scale(1);    color: #fff;    text-shadow: 0 0 0 transparent; }
+    30%  { transform: scale(1.35); color: #5cff9d; text-shadow: 0 0 14px #5cff9d; }
+    100% { transform: scale(1);    color: #fff;    text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+  }
+  .pop { animation: pop 0.7s ease-out; }
+
+  .hasil { font-size: 40px; font-weight: 700; min-height: 48px; margin-top: 6px; }
+  .benar { color: #35e070; }
+  .salah { color: #ff4d4d; }
+
+  .aksi {
+    display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-start;
+    width: 100%; margin-top: 44px; overflow-x: auto;
+    text-align: left;
+  }
+  .aksi .btn { margin: 0 6px 0 0; flex: 0 0 auto; font-size: 14px; padding: 9px 10px; white-space: nowrap; }
+
+  .judul { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+  .bubble {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 18px; margin: 6px 0;
+    font-size: 20px; font-weight: 700;
+    color: var(--c);
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--c);
+    box-shadow: 0 0 6px var(--c);
+    border-radius: 10px;
+  }
+  .bubble b { font-size: 26px; }
+  .daftar {
+    max-height: 160px; overflow-y: auto;
+    font-size: 15px; margin: 10px 0;
+    line-height: 1.7;
+  }
+
+  /* ===== Tulisan by di pojok kiri atas ===== */
+  .byline {
+    position: fixed; top: 14px; left: 14px; z-index: 2;
+    font-size: 12px; letter-spacing: 0.05em;
+    color: #fff; opacity: 0.85;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+    pointer-events: none;
+  }
+
+  /* ===== Tulisan penyemangat di bawah ===== */
+  .motto {
+    position: fixed; left: 0; right: 0; bottom: 14px; z-index: 2;
+    text-align: center;
+    font-size: 14px; letter-spacing: 0.15em;
+    color: #fff;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <div class="bgset" data-i="0">
+    <video class="v-potret" src="bg1_potret.mp4" autoplay muted loop playsinline preload="auto"></video>
+    <video class="v-land" src="bg1_landscape.mp4" autoplay muted loop playsinline preload="auto"></video>
+  </div>
+  <div class="bgset" data-i="1">
+    <video class="v-potret" src="bg2_potret.mp4" autoplay muted loop playsinline preload="auto"></video>
+    <video class="v-land" src="bg2_landscape.mp4" autoplay muted loop playsinline preload="auto"></video>
+  </div>
+</div>
+
+<button class="btn-bg" aria-label="背景を変更" onclick="gantiBg()">
+  <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
+</button>
+
+<div class="wrap">
+  <div class="stack">
+
+    <div id="setup">
+      <textarea id="input" placeholder="1行に1カード（番号も貼り付けOK）"></textarea>
+      <button class="btn" style="--c:#b36bff" onclick="mulai()">開始</button>
+    </div>
+
+    <div id="latihan">
+      <div id="sisa" class="sisa"></div>
+      <input id="jawab" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="答えを入力してEnter">
+      <div id="hasil" class="hasil"></div>
+      <div class="aksi">
+        <button id="btnJeda" class="btn" style="--c:#5cff9d" onclick="toggleJeda()">一時停止</button>
+        <button class="btn" style="--c:#4aa8ff" onclick="reset()">リセット</button>
+        <button class="btn btn-baru" style="--c:#ff5ccf" onclick="dataBaru()">新しいデータ</button>
+      </div>
+    </div>
+
+    <div id="ringkasan">
+      <div class="judul">完了！</div>
+      <div class="bubble" style="--c:#35e070">正解 <b id="rBenar"></b></div>
+      <div class="bubble" style="--c:#ff4d4d">不正解 <b id="rSalah"></b> 回</div>
+      <div id="daftarSalah" class="daftar"></div>
+      <div class="aksi">
+        <button class="btn" style="--c:#4aa8ff" onclick="reset()">リセット</button>
+        <button class="btn btn-baru" style="--c:#ff5ccf" onclick="dataBaru()">新しいデータ</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="byline">by: オサム</div>
+<div class="motto">頑張って</div>
+
+<script>
+const KEY = 'recall_state';
+const BGKEY = 'recall_bg';
+const BG_COUNT = 2;
+let st = null;      // { cards, done, jeda, salah, salahList }
+let bg = 0;
+let lastSisa = null;
+
+/* ----- Bunyi ----- */
+const suara = {
+  benar: new Audio('benar.mp3'),
+  salah: new Audio('salah.mp3')
+};
+let suaraBuka = false;
+function bukaSuara() {
+  // Browser HP baru mengizinkan bunyi setelah sentuhan pertama
+  if (suaraBuka) return;
+  suaraBuka = true;
+  Object.values(suara).forEach(a => {
+    try {
+      a.muted = true;
+      const p = a.play();
+      if (p && p.then) p.then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
+                        .catch(() => { a.muted = false; });
+    } catch (e) { /* tidak apa-apa */ }
+  });
+}
+document.addEventListener('pointerdown', bukaSuara, { once: true });
+function bunyi(jenis) {
+  try {
+    const a = suara[jenis];
+    a.currentTime = 0;
+    a.play().catch(() => {});
+  } catch (e) {}
+}
+
+/* ----- Penyimpanan ----- */
+function simpan() {
+  try {
+    if (st) localStorage.setItem(KEY, JSON.stringify(st));
+    else localStorage.removeItem(KEY);
+  } catch (e) {}
+}
+
+/* ----- Latar video ----- */
+function pasangBg() {
+  document.querySelectorAll('.bgset').forEach((el, i) => {
+    el.classList.toggle('active', i === bg);
+  });
+  mainkanVideo();
+}
+function mainkanVideo() {
+  setTimeout(() => {
+    document.querySelectorAll('.bgset.active video').forEach(v => {
+      v.play().catch(() => {});
+    });
+  }, 200);
+}
+function gantiBg() {
+  bg = (bg + 1) % BG_COUNT;
+  try { localStorage.setItem(BGKEY, String(bg)); } catch (e) {}
+  pasangBg();
+}
+
+/* ----- Logika latihan ----- */
+function parse(text) {
+  return text.split('\n')
+    .map(l => l.replace(/^\s*\d+[.)]\s*/, '').trim())
+    .filter(l => l.length > 0)
+    .map(l => {
+      const p = l.split('|');
+      return { q: p[0].trim(), r: (p[1] || '').trim() };
+    });
+}
+
+function norm(s) {
+  return s.replace(/[~～]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function cocok(card, jawaban) {
+  return norm(card.q) === jawaban || (card.r && norm(card.r) === jawaban);
+}
+
+function animasiSisa() {
+  const el = document.getElementById('sisa');
+  el.classList.remove('pop');
+  void el.offsetWidth; // paksa reflow agar animasi bisa diulang
+  el.classList.add('pop');
+}
+
+function tampil() {
+  const ada = !!st;
+  const sisa = ada ? st.done.filter(d => !d).length : 0;
+  const selesai = ada && sisa === 0;
+
+  document.getElementById('setup').style.display = ada ? 'none' : 'block';
+  document.getElementById('latihan').style.display = (ada && !selesai) ? 'block' : 'none';
+  document.getElementById('ringkasan').style.display = selesai ? 'block' : 'none';
+
+  if (!ada) { lastSisa = null; return; }
+
+  document.getElementById('sisa').textContent = '残りカード: ' + sisa;
+  document.getElementById('btnJeda').textContent = st.jeda ? '再開' : '一時停止';
+  document.getElementById('jawab').disabled = st.jeda;
+
+  if (lastSisa !== null && sisa < lastSisa) animasiSisa();
+  lastSisa = sisa;
+
+  if (selesai) {
+    document.getElementById('rBenar').textContent = st.cards.length + ' ';
+    document.getElementById('rSalah').textContent = st.salah;
+    const daftar = document.getElementById('daftarSalah');
+    daftar.textContent = '';
+    Object.values(st.salahList)
+      .sort((a, b) => b.n - a.n)
+      .forEach(item => {
+        const div = document.createElement('div');
+        div.textContent = item.teks + '  × ' + item.n;
+        daftar.appendChild(div);
+      });
+  }
+}
+
+function mulai() {
+  const cards = parse(document.getElementById('input').value);
+  if (cards.length === 0) { alert('データが空です。'); return; }
+  bukaSuara();
+  st = { cards: cards, done: cards.map(() => false), jeda: false, salah: 0, salahList: {} };
+  lastSisa = null;
+  simpan();
+  tampil();
+  document.getElementById('jawab').focus();
+}
+
+function cekJawaban() {
+  const input = document.getElementById('jawab');
+  const raw = input.value.trim();
+  const jawaban = norm(raw);
+  input.value = '';
+  if (!jawaban) return;
+
+  const hasil = document.getElementById('hasil');
+  const idx = st.cards.findIndex((c, i) => !st.done[i] && cocok(c, jawaban));
+
+  if (idx !== -1) {
+    st.done[idx] = true;
+    hasil.textContent = '正解';
+    hasil.className = 'hasil benar';
+    bunyi('benar');
+  } else if (st.cards.some(c => cocok(c, jawaban))) {
+    // Sudah pernah dijawab benar: tetap dianggap benar, sisa tidak berkurang
+    hasil.textContent = '正解';
+    hasil.className = 'hasil benar';
+    bunyi('benar');
+  } else {
+    st.salah = (st.salah || 0) + 1;
+    st.salahList = st.salahList || {};
+    const prev = st.salahList[jawaban];
+    st.salahList[jawaban] = { teks: raw, n: prev ? prev.n + 1 : 1 };
+    hasil.textContent = '不正解';
+    hasil.className = 'hasil salah';
+    bunyi('salah');
+  }
+  simpan();
+  tampil();
+}
+
+function toggleJeda() {
+  st.jeda = !st.jeda;
+  simpan();
+  tampil();
+}
+
+function reset() {
+  st.done = st.done.map(() => false);
+  st.jeda = false;
+  st.salah = 0;
+  st.salahList = {};
+  lastSisa = null;
+  document.getElementById('hasil').textContent = '';
+  document.getElementById('hasil').className = 'hasil';
+  simpan();
+  tampil();
+}
+
+let baruSiap = false, baruTimer = null;
+function batalBaru() {
+  baruSiap = false;
+  clearTimeout(baruTimer);
+  document.querySelectorAll('.btn-baru').forEach(b => b.textContent = '新しいデータ');
+}
+function dataBaru() {
+  // Tekan dua kali dalam 3 detik untuk memastikan (tanpa kotak konfirmasi)
+  if (!baruSiap) {
+    baruSiap = true;
+    document.querySelectorAll('.btn-baru').forEach(b => b.textContent = 'もう一度');
+    baruTimer = setTimeout(batalBaru, 3000);
+    return;
+  }
+  batalBaru();
+  st = null;
+  lastSisa = null;
+  document.getElementById('input').value = '';
+  document.getElementById('hasil').textContent = '';
+  simpan();
+  tampil();
+}
+
+document.getElementById('jawab').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); cekJawaban(); }
+});
+
+window.addEventListener('orientationchange', mainkanVideo);
+window.addEventListener('resize', mainkanVideo);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) mainkanVideo(); });
+
+/* ----- Mulai aplikasi ----- */
+try {
+  const b = parseInt(localStorage.getItem(BGKEY) || '0', 10);
+  bg = isNaN(b) ? 0 : b % BG_COUNT;
+} catch (e) { bg = 0; }
+pasangBg();
+
+try {
+  const tersimpan = localStorage.getItem(KEY);
+  if (tersimpan) {
+    st = JSON.parse(tersimpan);
+    st.salah = st.salah || 0;
+    st.salahList = st.salahList || {};
+  }
+} catch (e) { st = null; }
+tampil();
+</script>
+</body>
+</html>
