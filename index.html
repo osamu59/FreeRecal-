@@ -520,9 +520,9 @@
   <button class="bar-sembunyi" aria-label="Sembunyikan musik" onclick="sembunyiBar(true)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
   <video id="videoLatar" class="video-latar" muted loop playsinline preload="auto" hidden></video>
   <div class="hiasan-bar" aria-hidden="true">
-    <div class="hiasan-kiri"><img class="totoro" src="hiasan/totoro-besar.png" alt=""><img class="totoro t2" src="hiasan/totoro-sedang.png" alt=""><img class="totoro t3" src="hiasan/totoro-kecil.png" alt=""></div>
-    <img class="hiasan-tengah" src="hiasan/joget.png" alt="">
-    <img class="hiasan-kanan" src="hiasan/kiki.png" alt="">
+    <div class="hiasan-kiri"><img class="totoro" src="hiasan-totoro-besar.png" alt=""><img class="totoro t2" src="hiasan-totoro-sedang.png" alt=""><img class="totoro t3" src="hiasan-totoro-kecil.png" alt=""></div>
+    <img class="hiasan-tengah" src="hiasan-joget.png" alt="">
+    <img class="hiasan-kanan" src="hiasan-kiki.png" alt="">
   </div>
   <div id="barSlotWrap" class="bar-slot-wrap"><div id="barSlot" class="bar-slot"></div></div>
   <div class="bar-kontrol">
@@ -534,7 +534,7 @@
   </div>
   <div class="bar-durasi">
     <span id="waktuSkrg">0:00</span>
-    <div id="trackDurasi" class="bar-track"><div class="jalur"><div id="isiDurasi" class="bar-isi"></div><canvas id="vizCanvas" class="viz-canvas"></canvas><img id="kucingDurasi" class="kucing-durasi" src="hiasan/kucing.png" alt=""></div></div>
+    <div id="trackDurasi" class="bar-track"><div class="jalur"><div id="isiDurasi" class="bar-isi"></div><canvas id="vizCanvas" class="viz-canvas"></canvas><img id="kucingDurasi" class="kucing-durasi" src="hiasan-kucing.png" alt=""></div></div>
     <span id="waktuTotal">0:00</span>
     <button id="btnBisu" class="bar-bisu" onclick="toggleBisu()" aria-label="Bisukan"></button>
   </div>
@@ -1620,11 +1620,11 @@ function hapusVideo(i) {
 /* ----- Lagu bawaan (bisa dihapus dan dipulihkan) ----- */
 const KEY_BAWAAN = 'recall_bawaan_v1';
 const LAGU_BAWAAN = [
-  { nama: 'Shinobu', dasar: 'bawaan/slot1' },
-  { nama: 'Reze', dasar: 'bawaan/slot2' },
-  { nama: 'Tenki no Ko', dasar: 'bawaan/slot3' },
-  { nama: 'Your Name', dasar: 'bawaan/slot4' },
-  { nama: 'Spirited Away', dasar: 'bawaan/slot5' }
+  { nama: 'Shinobu', dasar: 'bawaan-slot1' },
+  { nama: 'Reze', dasar: 'bawaan-slot2' },
+  { nama: 'Tenki no Ko', dasar: 'bawaan-slot3' },
+  { nama: 'Your Name', dasar: 'bawaan-slot4' },
+  { nama: 'Spirited Away', dasar: 'bawaan-slot5' }
 ];
 async function ambilBerkas(url, tipe) {
   const r = await fetch(url);
