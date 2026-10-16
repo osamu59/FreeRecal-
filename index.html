@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -23,29 +24,30 @@
     overflow: hidden;
   }
 
-  /* ===== Latar video ===== */
+  /* ===== Latar (bawaan, pilihan sendiri, atau warna polos) ===== */
   .bg { position: fixed; inset: 0; z-index: 0; background: #000; }
-  .bgset { position: absolute; inset: 0; display: none; }
-  .bgset.active { display: block; }
-  .bgset video {
+  .bg img, .bg video {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     object-fit: cover;
     display: none;
   }
-  .bgset::after {
+  .bg::after {
     content: ''; position: absolute; inset: 0;
     background: rgba(0, 0, 0, 0.15);
     pointer-events: none;
   }
+  .bg .lapis { position: absolute; inset: 0; opacity: 0; transition: opacity 0.5s ease; }
+  .bg .lapis.aktif { opacity: 1; }
   @media (orientation: portrait) {
-    .bgset.active .v-potret { display: block; }
+    .bg .v-potret { display: block; }
   }
   @media (orientation: landscape) {
-    .bgset.active .v-land { display: block; }
+    .bg .v-land { display: block; }
+    .wrap { align-items: flex-start; padding-top: 20vh !important; }
   }
 
-  /* ===== Tombol ganti background (pojok kanan atas) ===== */
+  /* ===== Tombol ganti latar cepat (pojok kanan atas) ===== */
   .btn-bg {
     position: fixed; top: 12px; right: 12px; z-index: 3;
     width: 36px; height: 36px; padding: 0;
@@ -57,6 +59,11 @@
     cursor: pointer;
   }
   .btn-bg svg { width: 18px; height: 18px; stroke: #ffd166; fill: none; stroke-width: 2; }
+  .btn-fokus { position: fixed; top: 12px; right: 58px; z-index: 3; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); border: 1px solid #ffd166; box-shadow: 0 0 6px #ffd166; border-radius: 50%; cursor: pointer; }
+  .btn-fokus svg { width: 18px; height: 18px; stroke: #ffd166; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .btn-fokus.aktif { background: #ffd166; }
+  .btn-fokus.aktif svg { stroke: #000; }
+  body.mode-fokus #barMusik, body.mode-fokus #btnTampilMusik { display: none !important; }
 
   /* ===== Konten di tengah layar ===== */
   .wrap {
@@ -72,6 +79,7 @@
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
   }
   #setup, #latihan, #ringkasan { display: none; width: 100%; }
+  #setup { max-height: 88vh; overflow-y: auto; }
 
   textarea, input {
     width: 100%; box-sizing: border-box;
@@ -105,6 +113,16 @@
     cursor: pointer;
   }
 
+  /* Ikon kecil di dalam tombol dan kolom */
+  .ikon {
+    width: 15px; height: 15px; flex: 0 0 auto;
+    fill: none; stroke: var(--c, currentColor);
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    vertical-align: -3px; margin-right: 5px;
+  }
+  .btn-hint .ikon, .btn-kecil .ikon { width: 12px; height: 12px; vertical-align: -2px; }
+  .tab .ikon { width: 16px; height: 16px; vertical-align: -3px; stroke: currentColor; margin-right: 4px; }
+
   .sisa {
     font-size: 22px; font-weight: 700;
     display: inline-block; margin: 6px 0;
@@ -120,14 +138,239 @@
   .benar { color: #35e070; }
   .salah { color: #ff4d4d; }
 
+  /* Tombol di layar ringkasan */
   .aksi {
     display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-start;
     width: 100%; margin-top: 44px; overflow-x: auto;
     text-align: left;
   }
   .aksi .btn { margin: 0 6px 0 0; flex: 0 0 auto; font-size: 14px; padding: 9px 10px; white-space: nowrap; }
+  .aksi-tengah { justify-content: center; flex-wrap: wrap; margin-top: 24px; }
 
-  .judul { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+  /* Tombol menu (☰) di pojok kiri atas */
+  .btn-menu {
+    position: fixed; top: 12px; left: 12px; z-index: 4;
+    width: 36px; height: 36px; padding: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid #5ce1ff;
+    box-shadow: 0 0 6px #5ce1ff;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .btn-menu span { display: block; width: 18px; height: 2px; background: #5ce1ff; border-radius: 2px; }
+
+  /* Panel geser dari kiri: baris tombol, tab, dan isinya */
+  .panel-samping {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 3;
+    width: min(78vw, 300px); box-sizing: border-box;
+    display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+    padding: 12px 12px 16px; overflow: hidden;
+    background: rgba(0, 0, 0, 0.45);
+    border-right: 1px solid #5ce1ff; box-shadow: 0 0 6px #5ce1ff;
+    transform: translateX(-105%); pointer-events: none;
+    transition: transform 0.3s ease;
+  }
+  .panel-samping.terbuka { transform: translateX(0); pointer-events: auto; }
+  .panel-samping .btn { width: 100%; margin: 0; font-size: 16px; padding: 12px 14px; text-align: left; }
+  .panel-samping .baris-menu .btn { flex: 1 1 0; width: auto; min-width: 0; font-size: 13px; padding: 8px 4px; text-align: center; white-space: nowrap; }
+  .baris-menu { display: flex; gap: 8px; align-items: center; flex: 0 0 auto; }
+  .ruang-menu { flex: 0 0 36px; }
+
+  .tab-baris { flex: 0 0 auto; display: flex; gap: 14px; border-bottom: 1px solid #5ce1ff; padding: 6px 0 2px; }
+  .tab { font-family: inherit; font-size: 15px; font-weight: 700; color: #fff; background: none; border: 0; padding: 4px 2px; margin: 0; opacity: 0.5; cursor: pointer; }
+  .tab.aktif { opacity: 1; text-decoration: underline; text-decoration-color: #5ce1ff; text-underline-offset: 6px; }
+
+  .area { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+  .area-scroll { overflow-y: auto; }
+  .judul-kecil { font-size: 16px; font-weight: 700; margin: 8px 0 4px; text-align: left; }
+  .thumb-nomor { display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+  /* ===== Pemutar musik (bar di bawah layar) ===== */
+  @property --aksen { syntax: '<color>'; inherits: true; initial-value: #22d3ee; }
+  .bar-musik {
+    --aksen: #22d3ee;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 12px 16px 44px; box-sizing: border-box;
+    color: #fff;
+    transition: transform 0.35s ease, --aksen 1s ease;
+  }
+  .bar-musik::before {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; top: 40px; z-index: -1;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.04));
+    border-top: 2px solid var(--aksen);
+    box-shadow: 0 -2px 10px var(--aksen);
+    pointer-events: none;
+  }
+  .bar-musik.sembunyi { transform: translateY(100%); pointer-events: none; }
+  .video-latar { position: absolute; left: 0; right: 0; bottom: 0; top: 40px; width: 100%; height: auto; object-fit: cover; z-index: -2; pointer-events: auto; cursor: pointer; opacity: 0.45; }
+  .bar-sembunyi { position: absolute; top: 37px; right: 8px; background: none; border: 0; padding: 4px; margin: 0; cursor: pointer; }
+  .bar-sembunyi svg { width: 18px; height: 18px; fill: none; stroke: var(--aksen); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .bar-slot-wrap { width: min(70vw, 250px); overflow: hidden; margin-bottom: 18px; }
+  .bar-slot { display: flex; gap: 10px; transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .bar-kotak {
+    flex: 0 0 48px; width: 48px; height: 48px; margin: 0; padding: 0; border: 0;
+    border-radius: 10px; background-color: rgba(255, 255, 255, 0.1);
+    background-size: cover; background-position: center;
+    color: #fff; font-family: inherit; font-size: 14px; font-weight: 700;
+    opacity: 0.5; transform: scale(0.92); cursor: pointer;
+    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.45s ease, box-shadow 0.45s ease;
+  }
+  .bar-kotak.isi { opacity: 0.9; box-shadow: 0 0 0 1px var(--aksen), 0 0 8px var(--aksen); }
+  .bar-kotak.kosong { cursor: default; opacity: 0.25; }
+  .bar-kotak.aktif { opacity: 1; transform: scale(1.1); box-shadow: 0 0 0 2px var(--aksen), 0 0 14px var(--aksen); }
+  .bar-kontrol { display: grid; grid-template-columns: repeat(5, 56px); justify-items: center; align-items: center; column-gap: 10px; }
+  .bar-kontrol button { background: none; border: 0; padding: 6px; margin: 0; cursor: pointer; opacity: 0.45; transition: opacity 0.3s ease; }
+  .bar-kontrol button.on, .bar-kontrol button.utama { opacity: 1; }
+  .bar-kontrol svg { width: 22px; height: 22px; fill: none; stroke: var(--aksen); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.8s ease; }
+  .bar-kontrol .utama svg { width: 30px; height: 30px; fill: var(--aksen); }
+  .bar-durasi { width: min(88vw, 340px); display: flex; align-items: center; gap: 10px; font-size: 12px; font-variant-numeric: tabular-nums; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+  .bar-track { flex: 1; position: relative; height: 18px; display: flex; align-items: center; cursor: pointer; touch-action: none; }
+  .bar-track .jalur { position: relative; width: 100%; height: 4px; background: rgba(255, 255, 255, 0.25); border-radius: 2px; }
+  .bar-isi { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--aksen); border-radius: 2px; transition: background-color 0.8s ease; }
+  .bar-munculkan { position: fixed; left: 12px; bottom: 12px; z-index: 3; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.35); border: 0; border-radius: 50%; cursor: pointer; }
+  .bar-munculkan svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  body.ada-bar .wrap { padding-bottom: 290px; }
+
+  .viz-canvas { display: block; }
+  .bar-track .viz-canvas { position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 100%; height: 22px; pointer-events: none; }
+  .kucing-durasi { position: absolute; top: 50%; left: 0; width: 22px; height: auto; transform: translate(-50%, -80%); image-rendering: pixelated; pointer-events: none; }
+  .hiasan-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; width: 100%; height: 62px; margin-top: 18px; position: relative; top: -36px; pointer-events: none; }
+  /* Landscape: tepi atas bingkai turun ke sekitar 55% tinggi layar, objek ikut turun */
+  @media (orientation: landscape) {
+    .bar-musik::before { top: auto; height: 45vh; }
+    .video-latar { top: auto; height: 45vh; }
+    .hiasan-bar { top: calc(-36px + 30vh); }
+  }
+  /* Landscape: bingkai jadi widget kartu di pojok kanan bawah, rasio 16:9, isi rata tengah */
+  @media (orientation: landscape) {
+    .bar-musik {
+      left: auto; right: 2vw; bottom: 2vh;
+      height: 45vh; width: calc(45vh * 16 / 9); max-width: 92vw;
+      justify-content: center;
+      padding: 10px 12px; gap: 6px;
+      border: 2px solid var(--aksen); border-radius: 16px;
+      box-shadow: 0 0 12px var(--aksen); overflow: hidden;
+    }
+    .bar-musik::before {
+      top: 0; bottom: 0; left: 0; right: 0; height: auto;
+      border-top: none; box-shadow: none; border-radius: 0;
+    }
+    .video-latar { top: 0; bottom: 0; left: 0; right: 0; height: 100%; width: 100%; }
+    .bar-sembunyi { top: 6px; right: 6px; }
+    .hiasan-bar { top: 0; margin-top: 0; height: 40px; }
+    .hiasan-kiri .totoro { height: 28px; }
+    .hiasan-kiri .t2 { height: 22px; }
+    .hiasan-kiri .t3 { height: 18px; }
+    .hiasan-tengah { visibility: hidden; }
+    .hiasan-kanan { width: 56px; }
+    .bar-slot-wrap { margin-bottom: 0; }
+    .bar-slot { gap: 6px; }
+    .bar-kotak { flex: 0 0 36px; width: 36px; height: 36px; }
+    .bar-kontrol { grid-template-columns: repeat(5, 40px); column-gap: 6px; }
+    .bar-kontrol svg { width: 18px; height: 18px; }
+    .bar-kontrol .utama svg { width: 24px; height: 24px; }
+    .piringan { width: 44px; height: 44px; }
+    .bar-durasi { width: 88%; font-size: 11px; }
+  }
+  /* Landscape: objek sejajar di tepi atas kartu, isi kartu diberi jarak */
+  @media (orientation: landscape) {
+    .bar-musik { overflow: visible; padding: 22px 12px 10px; justify-content: flex-start; gap: 8px; }
+    .bar-musik::before, .video-latar { border-radius: 14px; }
+    .video-latar { opacity: 0.6; }
+    .hiasan-bar { position: absolute; left: 0; right: 0; top: -45px; height: 36px; margin: 0; }
+    .hiasan-kiri { position: relative; top: -5px; }
+    .bar-kontrol { margin-top: 8px; }
+    .bar-durasi { margin-top: 2px; }
+  }
+  .hiasan-bar img { display: block; }
+  .hiasan-bar .hiasan-tengah { visibility: hidden !important; }
+  .hiasan-kiri { justify-self: start; display: flex; align-items: flex-end; gap: 3px; }
+  .hiasan-tengah { height: 60px; width: auto; justify-self: center; animation: joget 1.2s ease-in-out infinite; }
+  .hiasan-kanan { justify-self: end; width: 100px; height: auto; animation: terbang 3s ease-in-out infinite; }
+  .hiasan-kiri img { height: auto; width: auto; }
+  .hiasan-kiri .totoro { height: 44px; animation: mengambang 2.6s ease-in-out infinite; }
+  .hiasan-kiri .t2 { height: 34px; }
+  .hiasan-kiri .t3 { height: 26px; }
+  .hiasan-kiri .t2 { animation-delay: 0.4s; }
+  .hiasan-kiri .t3 { animation-delay: 0.8s; }
+  @keyframes mengambang { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  @keyframes joget { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-4px) rotate(3deg); } }
+  @keyframes terbang { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(-2px, -4px) rotate(-4deg); } }
+  @media (prefers-reduced-motion: reduce) { .hiasan-bar img { animation: none !important; } }
+  .piringan { position: relative; width: 56px; height: 56px; flex: 0 0 auto; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+  .bar-kontrol .piringan { padding: 0; margin: 0; opacity: 1; }
+  .bar-kontrol .piringan.kosong { opacity: 0.4; }
+  .piringan .cakram {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: repeating-radial-gradient(circle, #0c0c10 0 1px, #1e1e25 2px 3px);
+    box-shadow: 0 0 0 1.5px var(--aksen), 0 0 12px var(--aksen);
+    animation: piringanPutar 3.2s linear infinite;
+    animation-play-state: paused;
+  }
+  .piringan .cakram::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+    background: conic-gradient(from 20deg, transparent 0 8%, rgba(255, 255, 255, 0.28) 14%, transparent 22% 58%, rgba(255, 255, 255, 0.18) 64%, transparent 72%);
+  }
+  .piringan .label {
+    position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px;
+    border-radius: 50%; z-index: 1;
+    background-color: var(--aksen); background-size: cover; background-position: center;
+  }
+  .piringan .label::after {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px;
+    border-radius: 50%; background: #0c0c10;
+  }
+  .piringan.main .cakram { animation-play-state: running; }
+  @keyframes piringanPutar { to { transform: rotate(360deg); } }
+  .bar-durasi .bar-bisu { flex: 0 0 auto; background: none; border: 0; padding: 4px; margin: 0; cursor: pointer; opacity: 0.55; }
+  .bar-durasi .bar-bisu.on { opacity: 1; }
+  .bar-durasi .bar-bisu .ikon { width: 18px; height: 18px; margin: 0; vertical-align: 0; stroke: var(--aksen); }
+  .aksi-slot { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
+  .aksi-slot .btn-kecil { width: 100%; margin: 0; padding: 4px 2px; font-size: 11px; }
+
+  .cari-wrap { position: relative; width: 100%; flex: 0 0 auto; }
+  .cari-wrap .ikon { position: absolute; left: 10px; top: 50%; margin: 0; transform: translateY(-50%); width: 16px; height: 16px; stroke: #5ce1ff; vertical-align: 0; }
+  .cari { flex: 0 0 auto; font-size: 15px; padding: 8px 10px; margin: 0; border: 1px solid #5ce1ff; box-shadow: 0 0 6px #5ce1ff; }
+  .cari-wrap .cari { padding-left: 34px; }
+  .tambah-box { width: 100%; flex-direction: column; gap: 6px; }
+  .tambah-input { font-size: 14px; height: 90px; resize: none; border: 1px solid #ffd166; box-shadow: 0 0 6px #ffd166; }
+
+  .isi-daftar { flex: 1 1 auto; min-height: 0; overflow-y: auto; font-size: 15px; line-height: 1.8; border-top: 1px solid #5ce1ff; padding-top: 8px; margin-top: 4px; }
+  .item-daftar.selesai { text-decoration: line-through; opacity: 0.5; }
+  .tag-sulit { font-size: 11px; color: #ffd166; margin-left: 6px; text-decoration: none; display: inline-block; }
+  .btn-kecil, .panel-samping .btn-kecil { width: auto; font-size: 12px; padding: 5px 8px; margin: 0 6px 0 0; text-align: center; }
+
+  .item-riwayat { padding: 8px 0; border-bottom: 1px solid rgba(92, 225, 255, 0.3); display: flex; flex-direction: column; gap: 4px; }
+  .riwayat-teks { cursor: pointer; }
+  .riwayat-nama { font-weight: 700; font-size: 15px; }
+  .riwayat-info { font-size: 12px; opacity: 0.8; }
+  .riwayat-aksi { display: flex; gap: 6px; flex-wrap: wrap; }
+  .riwayat-kosong { font-size: 14px; opacity: 0.7; padding: 8px 0; }
+
+  .item-latar { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid rgba(92, 225, 255, 0.3); border-radius: 10px; margin-bottom: 8px; cursor: pointer; }
+  .item-latar.terpilih { border-color: #ffd166; box-shadow: 0 0 6px #ffd166; }
+  .thumb { width: 48px; height: 48px; flex: 0 0 auto; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid #5ce1ff; }
+  .thumb-media { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .latar-info { flex: 1; min-width: 0; font-size: 14px; text-align: left; }
+  .latar-ket { font-size: 12px; opacity: 0.75; }
+  .baris-warna { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 12px; }
+  .swatch { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #fff; padding: 0; margin: 0; cursor: pointer; }
+  .swatch.terpilih { border-color: #ffd166; box-shadow: 0 0 8px #ffd166; }
+  .label-kecil { font-size: 13px; opacity: 0.85; text-align: left; margin-top: 6px; }
+  .file-sembunyi { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .nama-file { font-size: 13px; text-align: left; opacity: 0.85; margin: 4px 0 6px; word-break: break-all; }
+  .hint-latar { font-size: 12px; opacity: 0.8; text-align: left; margin: 8px 0; }
+  .pesan-latar { font-size: 13px; text-align: left; min-height: 18px; margin-bottom: 6px; }
+  .pesan-latar.salah { color: #ff4d4d; }
+  .pesan-latar.peringatan { color: #ffd166; }
+  .pesan-latar.sukses { color: #35e070; }
+
+  /* Baris sisa kartu dengan tombol ヒント di ujung kanan */
+  .baris-sisa { position: relative; width: 100%; display: flex; justify-content: center; align-items: center; }
+  .btn-hint { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-size: 12px; padding: 5px 9px; margin: 0; }
+
   .bubble {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 8px 18px; margin: 6px 0;
@@ -145,9 +388,9 @@
     line-height: 1.7;
   }
 
-  /* ===== Tulisan by di pojok kiri atas ===== */
+  /* ===== Tulisan by di pojok kanan bawah ===== */
   .byline {
-    position: fixed; top: 14px; left: 14px; z-index: 2;
+    position: fixed; bottom: 14px; right: 12px; z-index: 2;
     font-size: 12px; letter-spacing: 0.05em;
     color: #fff; opacity: 0.85;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
@@ -167,71 +410,183 @@
 </head>
 <body>
 
-<div class="bg" aria-hidden="true">
-  <div class="bgset" data-i="0">
-    <video class="v-potret" src="bg1_potret.mp4" autoplay muted loop playsinline preload="auto"></video>
-    <video class="v-land" src="bg1_landscape.mp4" autoplay muted loop playsinline preload="auto"></video>
-  </div>
-  <div class="bgset" data-i="1">
-    <video class="v-potret" src="bg2_potret.mp4" autoplay muted loop playsinline preload="auto"></video>
-    <video class="v-land" src="bg2_landscape.mp4" autoplay muted loop playsinline preload="auto"></video>
-  </div>
-</div>
+<div class="bg" id="bg" aria-hidden="true"></div>
 
+<button id="btnFokus" class="btn-fokus" aria-label="Mode fokus" aria-pressed="false" onclick="toggleFokus()">
+  <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+</button>
 <button class="btn-bg" aria-label="背景を変更" onclick="gantiBg()">
   <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
 </button>
+
+<button class="btn-menu" id="btnMenu" aria-label="メニュー" onclick="toggleMenu(event)"><span></span><span></span><span></span></button>
+
+<div id="panel" class="panel-samping">
+  <div id="barisMenu" class="baris-menu">
+    <span class="ruang-menu"></span>
+    <button class="btn" style="--c:#4aa8ff" onclick="reset()"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>リセット</button>
+    <button class="btn btn-baru" style="--c:#ff5ccf" onclick="dataBaru()"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M12 12v6M9 15h6"/></svg><span class="lbl">新しいデータ</span></button>
+  </div>
+
+  <div class="tab-baris">
+    <button id="tabDaftar" class="tab btn-tetap" onclick="gantiTab('daftar')"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>一覧</button>
+    <button id="tabRiwayat" class="tab btn-tetap" onclick="gantiTab('riwayat')"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>履歴</button>
+    <button id="tabPengaturan" class="tab btn-tetap" onclick="gantiTab('pengaturan')"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>設定</button>
+    <button id="tabMusik" class="tab btn-tetap" onclick="gantiTab('musik')"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>音楽</button>
+  </div>
+
+  <div id="areaDaftar" class="area" style="display:none">
+    <button class="btn btn-tetap" style="--c:#ffd166" onclick="bukaTambah('L')"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>追加</button>
+    <div id="tambahBoxL" class="tambah-box" style="display:none">
+      <textarea id="tambahL" class="tambah-input" placeholder="1行に1カード（番号も貼り付けOK）"></textarea>
+      <button class="btn btn-tetap" style="--c:#ffd166" onclick="tambahData('L')"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>追加する</button>
+    </div>
+    <div class="cari-wrap">
+      <svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="cari" class="cari" type="search" placeholder="検索" autocomplete="off" oninput="bukaDaftar()">
+    </div>
+    <div id="isiDaftar" class="isi-daftar"></div>
+  </div>
+
+  <div id="areaRiwayat" class="area" style="display:none">
+    <div id="isiRiwayat" class="isi-daftar"></div>
+  </div>
+
+  <div id="areaMusik" class="area area-scroll" style="display:none">
+    <div id="daftarSlot"></div>
+    <div id="pesanMusik" class="pesan-latar"></div>
+    <button id="btnPulihkan" type="button" class="btn btn-tetap" style="--c:#ffd166" onclick="pulihkanBawaan()"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span>Pulihkan bawaan</span></button>
+    <div class="hint-latar">Maksimal 10 MB per lagu. Disarankan di bawah 6 MB dan 8 menit. Sampul maksimal 5 MB. Isi lagu dulu sebelum memasang sampul. Pulihkan bawaan mengganti kelima slot dengan lagu bawaan.</div>
+  </div>
+
+  <div id="areaPengaturan" class="area area-scroll" style="display:none">
+    <div class="judul-kecil">Latar</div>
+    <div id="daftarLatar"></div>
+    <div class="judul-kecil">Tambah latar sendiri</div>
+    <input id="latarNama" class="cari" type="text" placeholder="Nama latar (opsional)" maxlength="30">
+    <div class="label-kecil">Potret (HP tegak)</div>
+    <button type="button" class="btn btn-tetap" style="--c:#5ce1ff" onclick="document.getElementById('filePotret').click()">Pilih file potret</button>
+    <input id="filePotret" class="file-sembunyi" type="file" accept="image/*,video/*" onchange="tampilNama('filePotret','namaPotret')">
+    <div id="namaPotret" class="nama-file">Belum dipilih</div>
+    <div class="label-kecil">Landscape (HP miring)</div>
+    <button type="button" class="btn btn-tetap" style="--c:#5ce1ff" onclick="document.getElementById('fileLand').click()">Pilih file landscape</button>
+    <input id="fileLand" class="file-sembunyi" type="file" accept="image/*,video/*" onchange="tampilNama('fileLand','namaLand')">
+    <div id="namaLand" class="nama-file">Belum dipilih</div>
+    <div class="hint-latar">Maksimal 15 MB dan 20 detik per file. Disarankan di bawah 5 MB dan 15 detik agar tidak berat. Boleh isi salah satu saja.</div>
+    <div id="pesanLatar" class="pesan-latar"></div>
+    <button class="btn btn-tetap" style="--c:#35e070" onclick="simpanLatar()"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>保存</button>
+  </div>
+</div>
 
 <div class="wrap">
   <div class="stack">
 
     <div id="setup">
       <textarea id="input" placeholder="1行に1カード（番号も貼り付けOK）"></textarea>
-      <button class="btn" style="--c:#b36bff" onclick="mulai()">開始</button>
+      <button class="btn" style="--c:#b36bff" onclick="mulai()"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>開始</button>
     </div>
 
     <div id="latihan">
-      <div id="sisa" class="sisa"></div>
+      <div class="baris-sisa">
+        <div id="sisa" class="sisa"></div>
+        <button class="btn btn-hint" style="--c:#ffd166" onclick="toggleHint()"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>ヒント</button>
+      </div>
       <input id="jawab" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="答えを入力してEnter">
       <div id="hasil" class="hasil"></div>
-      <div class="aksi">
-        <button id="btnJeda" class="btn" style="--c:#5cff9d" onclick="toggleJeda()">一時停止</button>
-        <button class="btn" style="--c:#4aa8ff" onclick="reset()">リセット</button>
-        <button class="btn btn-baru" style="--c:#ff5ccf" onclick="dataBaru()">新しいデータ</button>
-      </div>
+      <div id="jawabanTampil" class="bubble" style="--c:#ffd166;display:none"></div>
     </div>
 
     <div id="ringkasan">
-      <div class="judul">完了！</div>
+      <div class="judul" style="font-size:26px;font-weight:700;margin-bottom:8px">完了！</div>
       <div class="bubble" style="--c:#35e070">正解 <b id="rBenar"></b></div>
       <div class="bubble" style="--c:#ff4d4d">不正解 <b id="rSalah"></b> 回</div>
       <div id="daftarSalah" class="daftar"></div>
-      <div class="aksi">
-        <button class="btn" style="--c:#4aa8ff" onclick="reset()">リセット</button>
-        <button class="btn btn-baru" style="--c:#ff5ccf" onclick="dataBaru()">新しいデータ</button>
+      <div class="aksi aksi-tengah">
+        <button id="btnUlangSulit" class="btn" style="--c:#ffd166;display:none" onclick="ulangSulit()"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>苦手だけ復習</button>
+        <button class="btn btn-tetap" style="--c:#ffd166" onclick="bukaTambah('R')"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>追加</button>
+        <div id="tambahBoxR" class="tambah-box" style="display:none">
+          <textarea id="tambahR" class="tambah-input" placeholder="1行に1カード（番号も貼り付けOK）"></textarea>
+          <button class="btn btn-tetap" style="--c:#ffd166" onclick="tambahData('R')"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>追加する</button>
+        </div>
+        <button class="btn" style="--c:#4aa8ff" onclick="reset()"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>リセット</button>
+        <button class="btn btn-baru" style="--c:#ff5ccf" onclick="dataBaru()"><svg class="ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M12 12v6M9 15h6"/></svg><span class="lbl">新しいデータ</span></button>
       </div>
     </div>
 
   </div>
 </div>
 
+<div id="barMusik" class="bar-musik" style="display:none">
+  <button class="bar-sembunyi" aria-label="Sembunyikan musik" onclick="sembunyiBar(true)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+  <video id="videoLatar" class="video-latar" muted loop playsinline preload="auto" hidden></video>
+  <div class="hiasan-bar" aria-hidden="true">
+    <div class="hiasan-kiri"><img class="totoro" src="hiasan/totoro-besar.png" alt=""><img class="totoro t2" src="hiasan/totoro-sedang.png" alt=""><img class="totoro t3" src="hiasan/totoro-kecil.png" alt=""></div>
+    <img class="hiasan-tengah" src="hiasan/joget.png" alt="">
+    <img class="hiasan-kanan" src="hiasan/kiki.png" alt="">
+  </div>
+  <div id="barSlotWrap" class="bar-slot-wrap"><div id="barSlot" class="bar-slot"></div></div>
+  <div class="bar-kontrol">
+    <button id="btnAcak" onclick="toggleAcak()" aria-label="Acak"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg></button>
+    <button id="btnSebelum" onclick="musikSebelum()" aria-label="Sebelumnya"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14"/><path d="M18 5L8 12l10 7z"/></svg></button>
+    <button id="btnPutar" class="piringan" onclick="musikPutarJeda()" aria-label="Putar atau jeda"><span class="cakram"><span id="labelPiringan" class="label"></span></span></button>
+    <button id="btnBerikut" onclick="musikBerikut()" aria-label="Berikutnya"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5l10 7-10 7z"/><path d="M18 5v14"/></svg></button>
+    <button id="btnUlangi" onclick="toggleUlangi()" aria-label="Ulangi lagu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg></button>
+  </div>
+  <div class="bar-durasi">
+    <span id="waktuSkrg">0:00</span>
+    <div id="trackDurasi" class="bar-track"><div class="jalur"><div id="isiDurasi" class="bar-isi"></div><canvas id="vizCanvas" class="viz-canvas"></canvas><img id="kucingDurasi" class="kucing-durasi" src="hiasan/kucing.png" alt=""></div></div>
+    <span id="waktuTotal">0:00</span>
+    <button id="btnBisu" class="bar-bisu" onclick="toggleBisu()" aria-label="Bisukan"></button>
+  </div>
+</div>
+<button id="btnTampilMusik" class="bar-munculkan" style="display:none" aria-label="Tampilkan musik" onclick="sembunyiBar(false)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></button>
+
 <div class="byline">by: オサム</div>
 <div class="motto">頑張って</div>
 
 <script>
 const KEY = 'recall_state';
-const BGKEY = 'recall_bg';
-const BG_COUNT = 2;
-let st = null;      // { cards, done, jeda, salah, salahList }
-let bg = 0;
+const KEY_BG = 'recall_bg';
+const KEY_LATAR = 'recall_latar';
+const KEY_RIWAYAT = 'recall_riwayat';
+const DB_NAME = 'recall_media';
+
+// Latar bawaan: tidak bisa dihapus
+const BAWAAN = [
+  { id: 'bawaan1', nama: 'Latar 1', potret: 'bg1_potret.mp4', land: 'bg1_landscape.mp4', p: 'video', l: 'video', bawaan: true },
+  { id: 'bawaan2', nama: 'Latar 2', potret: 'bg2_potret.mp4', land: 'bg2_landscape.mp4', p: 'video', l: 'video', bawaan: true }
+];
+const WARNA = [
+  { hex: '#000000', nama: 'Hitam' },
+  { hex: '#0b1d3a', nama: 'Biru gelap' },
+  { hex: '#1e0b3a', nama: 'Ungu gelap' },
+  { hex: '#0b2e1f', nama: 'Hijau gelap' },
+  { hex: '#2a2a2a', nama: 'Abu gelap' }
+];
+const IKON_KECIL = {
+  '保存': '<path d="M5 12l5 5L20 7"/>',
+  '名前変更': '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  '削除': '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/>',
+  'もう一度': '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/>'
+};
+
+// st = { cards, done, jeda, salah, salahList, streak, sulit }
+let st = null;
 let lastSisa = null;
+let jawabanTimer = null;
+let suaraBuka = false;
+let baruSiap = false, baruTimer = null;
+let editId = null, hapusId = null, hapusTimer = null;
+let hapusLatarId = null, hapusLatarTimer = null;
+let tabAktif = 'daftar';
+let pasangToken = 0;
+const urlCache = {};
 
 /* ----- Bunyi ----- */
 const suara = {
   benar: new Audio('benar.mp3'),
   salah: new Audio('salah.mp3')
 };
-let suaraBuka = false;
 function bukaSuara() {
   // Browser HP baru mengizinkan bunyi setelah sentuhan pertama
   if (suaraBuka) return;
@@ -254,7 +609,7 @@ function bunyi(jenis) {
   } catch (e) {}
 }
 
-/* ----- Penyimpanan ----- */
+/* ----- Penyimpanan sesi ----- */
 function simpan() {
   try {
     if (st) localStorage.setItem(KEY, JSON.stringify(st));
@@ -262,24 +617,345 @@ function simpan() {
   } catch (e) {}
 }
 
-/* ----- Latar video ----- */
-function pasangBg() {
-  document.querySelectorAll('.bgset').forEach((el, i) => {
-    el.classList.toggle('active', i === bg);
+/* ----- Pilihan latar ----- */
+function ambilPilihan() {
+  try {
+    const v = localStorage.getItem(KEY_BG);
+    if (!v || v === '0') return 'bawaan1';
+    if (v === '1') return 'bawaan2';
+    return v;
+  } catch (e) { return 'bawaan1'; }
+}
+function simpanPilihan(v) {
+  try { localStorage.setItem(KEY_BG, v); } catch (e) {}
+}
+function ambilLatar() {
+  try { return JSON.parse(localStorage.getItem(KEY_LATAR) || '[]'); } catch (e) { return []; }
+}
+function simpanLatarList(daftar) {
+  try { localStorage.setItem(KEY_LATAR, JSON.stringify(daftar)); } catch (e) {}
+}
+function semuaLatar() {
+  return BAWAAN.concat(ambilLatar().map(x => Object.assign({}, x, { bawaan: false })));
+}
+function cariLatar(id) {
+  return semuaLatar().find(x => x.id === id) || null;
+}
+
+/* ----- Penyimpanan file latar (IndexedDB) ----- */
+function bukaDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('files');
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
   });
-  mainkanVideo();
+}
+async function idbJalankan(mode, fn) {
+  const db = await bukaDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('files', mode);
+    const req = fn(tx.objectStore('files'));
+    tx.oncomplete = () => { db.close(); res(req ? req.result : undefined); };
+    tx.onerror = () => { db.close(); rej(tx.error); };
+  });
+}
+function idbSimpan(key, blob) { return idbJalankan('readwrite', s => s.put(blob, key)); }
+function idbAmbil(key) { return idbJalankan('readonly', s => s.get(key)); }
+function idbHapus(key) { return idbJalankan('readwrite', s => s.delete(key)); }
+
+async function urlMedia(key) {
+  if (urlCache[key]) return urlCache[key];
+  const blob = await idbAmbil(key);
+  if (!blob) return null;
+  urlCache[key] = URL.createObjectURL(blob);
+  return urlCache[key];
+}
+
+/* ----- Latar di layar ----- */
+function buatMedia(src, tipe, kelas, pratinjau) {
+  const gambar = tipe === 'image';
+  const el = document.createElement(gambar ? 'img' : 'video');
+  el.className = kelas;
+  el.src = src;
+  if (gambar) { el.alt = ''; return el; }
+  el.muted = true;
+  el.loop = true;
+  el.preload = 'auto';
+  el.setAttribute('playsinline', '');
+  if (!pratinjau) el.autoplay = true;
+  return el;
 }
 function mainkanVideo() {
   setTimeout(() => {
-    document.querySelectorAll('.bgset.active video').forEach(v => {
-      v.play().catch(() => {});
-    });
+    document.querySelectorAll('.bg video').forEach(v => { v.play().catch(() => {}); });
   }, 200);
 }
+async function pasangLatar() {
+  const token = ++pasangToken;
+  const bgEl = document.getElementById('bg');
+  const pilih = ambilPilihan();
+  if (pilih.indexOf('w:') === 0) {
+    bgEl.style.background = pilih.slice(2);
+    lepasLapis(bgEl, null);
+    return;
+  }
+  bgEl.style.background = '#000';
+  const meta = cariLatar(pilih) || BAWAAN[0];
+  let srcP = null, srcL = null;
+  if (meta.bawaan) {
+    srcP = meta.potret;
+    srcL = meta.land;
+  } else {
+    if (meta.p) srcP = await urlMedia(meta.id + '-p');
+    if (meta.l) srcL = await urlMedia(meta.id + '-l');
+  }
+  if (token !== pasangToken) return;
+  if (!srcP && !srcL) {
+    if (meta !== BAWAAN[0]) { simpanPilihan('bawaan1'); return pasangLatar(); }
+    return;
+  }
+  let tP = meta.p || 'video', tL = meta.l || 'video';
+  // Jika salah satu orientasi kosong, pakai yang tersedia
+  if (!srcP) { srcP = srcL; tP = tL; }
+  if (!srcL) { srcL = srcP; tL = tP; }
+  const lapis = document.createElement('div');
+  lapis.className = 'lapis';
+  const elP = buatMedia(srcP, tP, 'v-potret', false);
+  const elL = buatMedia(srcL, tL, 'v-land', false);
+  lapis.appendChild(elP);
+  lapis.appendChild(elL);
+  bgEl.appendChild(lapis);
+  // Tampil setelah latar yang terlihat siap, supaya tidak ada kilatan ikon play
+  const terlihat = window.matchMedia('(orientation: portrait)').matches ? elP : elL;
+  await tungguSiap(terlihat);
+  if (token !== pasangToken) { lapis.remove(); return; }
+  lapis.classList.add('aktif');
+  lepasLapis(bgEl, lapis);
+  mainkanVideo();
+}
+// Latar lama memudar lalu dihapus, sehingga pergantian halus
+function lepasLapis(bgEl, baru) {
+  bgEl.querySelectorAll('.lapis').forEach(l => {
+    if (l === baru) return;
+    l.classList.remove('aktif');
+    setTimeout(() => l.remove(), 600);
+  });
+}
+function tungguSiap(el) {
+  return new Promise(res => {
+    if (el.tagName === 'IMG') {
+      if (el.complete) res();
+      else { el.onload = () => res(); el.onerror = () => res(); }
+    } else if (el.readyState >= 2) {
+      res();
+    } else {
+      el.addEventListener('loadeddata', () => res(), { once: true });
+      el.addEventListener('error', () => res(), { once: true });
+    }
+    setTimeout(res, 2500);
+  });
+}
+function pilihLatar(v) {
+  simpanPilihan(v);
+  pasangLatar();
+  renderLatar();
+}
+// Tombol kecil di pojok kanan atas: berganti ke pilihan berikutnya
 function gantiBg() {
-  bg = (bg + 1) % BG_COUNT;
-  try { localStorage.setItem(BGKEY, String(bg)); } catch (e) {}
-  pasangBg();
+  // Hanya berputar di latar video/foto (bawaan dan sendiri); warna polos dipilih dari menu 設定
+  const urutan = semuaLatar().map(x => x.id);
+  const i = urutan.indexOf(ambilPilihan());
+  pilihLatar(urutan[(i + 1) % urutan.length]);
+}
+
+/* ----- Pengaturan latar ----- */
+function buatThumb(l) {
+  const wrap = document.createElement('div');
+  wrap.className = 'thumb';
+  let sumber, tipe = 'video';
+  if (l.bawaan) {
+    sumber = Promise.resolve(l.potret);
+  } else {
+    tipe = l.p || l.l;
+    sumber = urlMedia(l.p ? l.id + '-p' : l.id + '-l');
+  }
+  sumber.then(s => {
+    if (!s) return;
+    if (tipe === 'image') { wrap.appendChild(buatGambar(s)); return; }
+    return ambilFrame(s).then(d => { if (d) wrap.appendChild(buatGambar(d)); });
+  }).catch(() => {});
+  return wrap;
+}
+// Thumbnail berupa gambar diam (satu frame dari video), bukan video yang menampilkan ikon play
+function buatGambar(src) {
+  const img = document.createElement('img');
+  img.className = 'thumb-media';
+  img.alt = '';
+  img.src = src;
+  return img;
+}
+const thumbCache = {};
+function ambilFrame(src) {
+  if (thumbCache[src]) return Promise.resolve(thumbCache[src]);
+  return new Promise(res => {
+    const v = document.createElement('video');
+    v.muted = true;
+    v.preload = 'auto';
+    v.setAttribute('playsinline', '');
+    const batas = setTimeout(() => res(null), 4000);
+    v.onloadeddata = () => {
+      try { v.currentTime = Math.min(0.3, (v.duration || 1) / 2); }
+      catch (e) { clearTimeout(batas); res(null); }
+    };
+    v.onseeked = () => {
+      clearTimeout(batas);
+      let hasil = null;
+      try {
+        const s = Math.min(v.videoWidth, v.videoHeight);
+        const c = document.createElement('canvas');
+        c.width = 96; c.height = 96;
+        c.getContext('2d').drawImage(v, (v.videoWidth - s) / 2, (v.videoHeight - s) / 2, s, s, 0, 0, 96, 96);
+        hasil = c.toDataURL('image/jpeg', 0.7);
+        thumbCache[src] = hasil;
+      } catch (e) {}
+      v.removeAttribute('src');
+      v.load();
+      res(hasil);
+    };
+    v.onerror = () => { clearTimeout(batas); res(null); };
+    v.src = src;
+  });
+}
+function renderLatar() {
+  const box = document.getElementById('daftarLatar');
+  if (!box) return;
+  box.textContent = '';
+  const pilih = ambilPilihan();
+  semuaLatar().forEach(l => {
+    const row = document.createElement('div');
+    row.className = 'item-latar' + (pilih === l.id ? ' terpilih' : '');
+    row.addEventListener('click', () => pilihLatar(l.id));
+    row.appendChild(buatThumb(l));
+
+    const info = document.createElement('div');
+    info.className = 'latar-info';
+    const nm = document.createElement('div');
+    nm.textContent = l.nama + (l.bawaan ? ' (bawaan)' : '');
+    const ket = document.createElement('div');
+    ket.className = 'latar-ket';
+    ket.textContent = (l.p && l.l) ? 'Potret & landscape' : (l.p ? 'Potret saja' : 'Landscape saja');
+    info.appendChild(nm);
+    info.appendChild(ket);
+    row.appendChild(info);
+
+    if (!l.bawaan) {
+      row.appendChild(btnKecil(hapusLatarId === l.id ? 'もう一度' : '削除', '#ff4d4d', () => hapusLatar(l.id)));
+    }
+    box.appendChild(row);
+  });
+
+  const judul = document.createElement('div');
+  judul.className = 'judul-kecil';
+  judul.textContent = 'Warna polos';
+  box.appendChild(judul);
+  const baris = document.createElement('div');
+  baris.className = 'baris-warna';
+  WARNA.forEach(w => {
+    const b = document.createElement('button');
+    b.className = 'swatch btn-tetap' + (pilih === 'w:' + w.hex ? ' terpilih' : '');
+    b.style.background = w.hex;
+    b.title = w.nama;
+    b.addEventListener('click', () => pilihLatar('w:' + w.hex));
+    baris.appendChild(b);
+  });
+  box.appendChild(baris);
+}
+// Memeriksa ukuran dan durasi file sebelum disimpan
+function cekFile(f) {
+  return new Promise(resolve => {
+    const mb = f.size / (1024 * 1024);
+    if (mb > 15) return resolve({ error: f.name + ': ukuran ' + mb.toFixed(1) + ' MB terlalu besar (maks 15 MB).' });
+    if ((f.type || '').indexOf('video') !== 0) {
+      return resolve(mb > 5 ? { warn: f.name + ': ' + mb.toFixed(1) + ' MB, agak berat. Disarankan di bawah 5 MB.' } : {});
+    }
+    const v = document.createElement('video');
+    const url = URL.createObjectURL(f);
+    v.preload = 'metadata';
+    v.onloadedmetadata = () => {
+      const d = v.duration;
+      URL.revokeObjectURL(url);
+      if (d > 20) return resolve({ error: f.name + ': durasi ' + Math.round(d) + ' detik terlalu panjang (maks 20 detik).' });
+      if (mb > 5 || d > 15) return resolve({ warn: f.name + ': ' + mb.toFixed(1) + ' MB, ' + Math.round(d) + ' detik. Disarankan di bawah 5 MB dan 15 detik.' });
+      resolve({});
+    };
+    v.onerror = () => { URL.revokeObjectURL(url); resolve({ error: f.name + ': format video tidak bisa dibaca.' }); };
+    v.src = url;
+  });
+}
+function tampilNama(inputId, outId) {
+  const f = document.getElementById(inputId).files[0];
+  document.getElementById(outId).textContent = f ? '✓ ' + f.name : 'Belum dipilih';
+}
+async function simpanLatar() {
+  const pesan = document.getElementById('pesanLatar');
+  const tampilPesan = (teks, kelas) => { pesan.textContent = teks; pesan.className = 'pesan-latar ' + kelas; };
+  const fP = document.getElementById('filePotret').files[0] || null;
+  const fL = document.getElementById('fileLand').files[0] || null;
+  if (!fP && !fL) return tampilPesan('Pilih minimal satu file (potret atau landscape).', 'salah');
+
+  const peringatan = [];
+  for (const f of [fP, fL]) {
+    if (!f) continue;
+    const c = await cekFile(f);
+    if (c.error) return tampilPesan(c.error, 'salah');
+    if (c.warn) peringatan.push(c.warn);
+  }
+
+  const id = 'l' + Date.now().toString(36);
+  const nama = document.getElementById('latarNama').value.trim() || ('Latar ' + (ambilLatar().length + 1));
+  try {
+    if (fP) await idbSimpan(id + '-p', fP);
+    if (fL) await idbSimpan(id + '-l', fL);
+  } catch (e) {
+    return tampilPesan('Gagal menyimpan. Penyimpanan HP mungkin penuh.', 'salah');
+  }
+  const jenis = f => ((f.type || '').indexOf('video') === 0 ? 'video' : 'image');
+  const daftar = ambilLatar();
+  daftar.push({ id: id, nama: nama, p: fP ? jenis(fP) : null, l: fL ? jenis(fL) : null });
+  simpanLatarList(daftar);
+
+  document.getElementById('latarNama').value = '';
+  document.getElementById('filePotret').value = '';
+  document.getElementById('fileLand').value = '';
+  document.getElementById('namaPotret').textContent = 'Belum dipilih';
+  document.getElementById('namaLand').textContent = 'Belum dipilih';
+  simpanPilihan(id);
+  pasangLatar();
+  renderLatar();
+  if (peringatan.length) tampilPesan('Tersimpan, tetapi: ' + peringatan.join(' '), 'peringatan');
+  else tampilPesan('Latar tersimpan dan dipakai.', 'sukses');
+}
+function hapusLatar(id) {
+  // Tekan dua kali dalam 3 detik
+  if (hapusLatarId !== id) {
+    hapusLatarId = id;
+    clearTimeout(hapusLatarTimer);
+    hapusLatarTimer = setTimeout(() => { hapusLatarId = null; renderLatar(); }, 3000);
+    renderLatar();
+    return;
+  }
+  clearTimeout(hapusLatarTimer);
+  hapusLatarId = null;
+  ['-p', '-l'].forEach(s => {
+    const k = id + s;
+    if (urlCache[k]) { URL.revokeObjectURL(urlCache[k]); delete urlCache[k]; }
+    idbHapus(k).catch(() => {});
+  });
+  simpanLatarList(ambilLatar().filter(x => x.id !== id));
+  if (ambilPilihan() === id) simpanPilihan('bawaan1');
+  pasangLatar();
+  renderLatar();
 }
 
 /* ----- Logika latihan ----- */
@@ -304,24 +980,57 @@ function cocok(card, jawaban) {
 function animasiSisa() {
   const el = document.getElementById('sisa');
   el.classList.remove('pop');
-  void el.offsetWidth; // paksa reflow agar animasi bisa diulang
+  void el.offsetWidth;
   el.classList.add('pop');
+}
+
+/* Menampilkan jawaban kartu pertama yang belum benar */
+function tampilkanJawaban(durasiMs) {
+  const idx = st.cards.findIndex((c, i) => !st.done[i]);
+  if (idx === -1) return;
+  st.sulit = st.sulit || {};
+  st.sulit[idx] = true;
+  st.streak = 0;
+  const el = document.getElementById('jawabanTampil');
+  el.textContent = '正解: ' + st.cards[idx].q;
+  el.style.display = 'inline-flex';
+  clearTimeout(jawabanTimer);
+  if (durasiMs > 0) jawabanTimer = setTimeout(sembunyiJawaban, durasiMs);
+  simpan();
+  tampil();
+}
+function sembunyiJawaban() {
+  clearTimeout(jawabanTimer);
+  document.getElementById('jawabanTampil').style.display = 'none';
+}
+function toggleHint() {
+  const el = document.getElementById('jawabanTampil');
+  if (el.style.display !== 'none') sembunyiJawaban();
+  else tampilkanJawaban(0);
 }
 
 function tampil() {
   const ada = !!st;
   const sisa = ada ? st.done.filter(d => !d).length : 0;
   const selesai = ada && sisa === 0;
+  const adaSulit = ada && st.sulit && Object.keys(st.sulit).length > 0;
 
   document.getElementById('setup').style.display = ada ? 'none' : 'block';
   document.getElementById('latihan').style.display = (ada && !selesai) ? 'block' : 'none';
   document.getElementById('ringkasan').style.display = selesai ? 'block' : 'none';
+  document.getElementById('btnMenu').style.display = selesai ? 'none' : 'flex';
+  document.getElementById('barisMenu').style.display = ada ? 'flex' : 'none';
+  document.getElementById('tabDaftar').style.display = ada ? '' : 'none';
+  if (selesai) document.getElementById('panel').classList.remove('terbuka');
 
-  if (!ada) { lastSisa = null; return; }
+  if (!ada) {
+    lastSisa = null;
+    if (tabAktif === 'daftar') gantiTab('riwayat');
+    return;
+  }
 
   document.getElementById('sisa').textContent = '残りカード: ' + sisa;
-  document.getElementById('btnJeda').textContent = st.jeda ? '再開' : '一時停止';
-  document.getElementById('jawab').disabled = st.jeda;
+  document.getElementById('btnUlangSulit').style.display = adaSulit ? 'inline-block' : 'none';
 
   if (lastSisa !== null && sisa < lastSisa) animasiSisa();
   lastSisa = sisa;
@@ -345,7 +1054,8 @@ function mulai() {
   const cards = parse(document.getElementById('input').value);
   if (cards.length === 0) { alert('データが空です。'); return; }
   bukaSuara();
-  st = { cards: cards, done: cards.map(() => false), jeda: false, salah: 0, salahList: {} };
+  st = { cards: cards, done: cards.map(() => false), jeda: false,
+         salah: 0, salahList: {}, streak: 0, sulit: {} };
   lastSisa = null;
   simpan();
   tampil();
@@ -359,16 +1069,20 @@ function cekJawaban() {
   input.value = '';
   if (!jawaban) return;
 
+  sembunyiJawaban();
+
   const hasil = document.getElementById('hasil');
   const idx = st.cards.findIndex((c, i) => !st.done[i] && cocok(c, jawaban));
 
   if (idx !== -1) {
     st.done[idx] = true;
+    st.streak = 0;
     hasil.textContent = '正解';
     hasil.className = 'hasil benar';
     bunyi('benar');
   } else if (st.cards.some(c => cocok(c, jawaban))) {
     // Sudah pernah dijawab benar: tetap dianggap benar, sisa tidak berkurang
+    st.streak = 0;
     hasil.textContent = '正解';
     hasil.className = 'hasil benar';
     bunyi('benar');
@@ -377,16 +1091,12 @@ function cekJawaban() {
     st.salahList = st.salahList || {};
     const prev = st.salahList[jawaban];
     st.salahList[jawaban] = { teks: raw, n: prev ? prev.n + 1 : 1 };
+    st.streak = (st.streak || 0) + 1;
     hasil.textContent = '不正解';
     hasil.className = 'hasil salah';
     bunyi('salah');
+    if (st.streak >= 3) tampilkanJawaban(5000);
   }
-  simpan();
-  tampil();
-}
-
-function toggleJeda() {
-  st.jeda = !st.jeda;
   simpan();
   tampil();
 }
@@ -396,6 +1106,9 @@ function reset() {
   st.jeda = false;
   st.salah = 0;
   st.salahList = {};
+  st.streak = 0;
+  st.sulit = {};
+  sembunyiJawaban();
   lastSisa = null;
   document.getElementById('hasil').textContent = '';
   document.getElementById('hasil').className = 'hasil';
@@ -403,23 +1116,43 @@ function reset() {
   tampil();
 }
 
-let baruSiap = false, baruTimer = null;
+/* Mengulang hanya kartu yang sulit */
+function ulangSulit() {
+  const idxs = Object.keys(st.sulit || {}).map(Number).sort((a, b) => a - b);
+  if (idxs.length === 0) return;
+  st.cards = idxs.map(i => st.cards[i]);
+  st.done = st.cards.map(() => false);
+  st.sulit = {};
+  st.salah = 0;
+  st.salahList = {};
+  st.streak = 0;
+  st.jeda = false;
+  sembunyiJawaban();
+  lastSisa = null;
+  document.getElementById('hasil').textContent = '';
+  document.getElementById('hasil').className = 'hasil';
+  simpan();
+  tampil();
+}
+
+/* ----- Data baru (tekan dua kali dalam 3 detik) ----- */
 function batalBaru() {
   baruSiap = false;
   clearTimeout(baruTimer);
-  document.querySelectorAll('.btn-baru').forEach(b => b.textContent = '新しいデータ');
+  document.querySelectorAll('.btn-baru .lbl').forEach(b => b.textContent = '新しいデータ');
 }
 function dataBaru() {
-  // Tekan dua kali dalam 3 detik untuk memastikan (tanpa kotak konfirmasi)
   if (!baruSiap) {
     baruSiap = true;
-    document.querySelectorAll('.btn-baru').forEach(b => b.textContent = 'もう一度');
+    document.querySelectorAll('.btn-baru .lbl').forEach(b => b.textContent = 'もう一度');
     baruTimer = setTimeout(batalBaru, 3000);
     return;
   }
   batalBaru();
+  arsipkan(); // sesi yang sedang berjalan masuk riwayat dulu
   st = null;
   lastSisa = null;
+  sembunyiJawaban();
   document.getElementById('input').value = '';
   document.getElementById('hasil').textContent = '';
   simpan();
@@ -430,27 +1163,812 @@ document.getElementById('jawab').addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); cekJawaban(); }
 });
 
+/* ----- Panel geser ----- */
+function toggleMenu(e) {
+  if (e) e.stopPropagation();
+  const m = document.getElementById('panel');
+  m.classList.toggle('terbuka');
+  if (m.classList.contains('terbuka')) segarkanPanel();
+}
+document.addEventListener('click', e => {
+  const m = document.getElementById('panel');
+  if (!m.classList.contains('terbuka')) return;
+  // composedPath tetap benar meski elemen sudah dibuat ulang saat diklik
+  const dalam = e.composedPath ? e.composedPath().indexOf(m) !== -1 : m.contains(e.target);
+  const tutup = !dalam || (e.target.tagName === 'BUTTON' &&
+    !e.target.classList.contains('btn-baru') && !e.target.classList.contains('btn-tetap'));
+  if (tutup) m.classList.remove('terbuka');
+});
+
+function segarkanPanel() {
+  if (tabAktif === 'daftar' && st) bukaDaftar();
+  else if (tabAktif === 'riwayat') renderRiwayat();
+  else if (tabAktif === 'pengaturan') renderLatar();
+  else if (tabAktif === 'musik') renderSlotEditor();
+  else gantiTab('riwayat');
+}
+function gantiTab(nama) {
+  tabAktif = nama;
+  const bagian = { daftar: ['areaDaftar', 'tabDaftar'], riwayat: ['areaRiwayat', 'tabRiwayat'], pengaturan: ['areaPengaturan', 'tabPengaturan'], musik: ['areaMusik', 'tabMusik'] };
+  Object.keys(bagian).forEach(k => {
+    document.getElementById(bagian[k][0]).style.display = k === nama ? 'flex' : 'none';
+    document.getElementById(bagian[k][1]).classList.toggle('aktif', k === nama);
+  });
+  editId = null;
+  segarkanPanel();
+}
+
+/* ----- Daftar kartu (dalam panel) ----- */
+function bukaDaftar() {
+  if (!st) return;
+  const box = document.getElementById('isiDaftar');
+  const cari = norm(document.getElementById('cari').value);
+  box.textContent = '';
+  st.cards.forEach((c, i) => {
+    // Pencarian: cukup sebagian huruf (kanji atau hiragana)
+    if (cari && !(norm(c.q).includes(cari) || (c.r && norm(c.r).includes(cari)))) return;
+    const div = document.createElement('div');
+    div.className = 'item-daftar' + (st.done[i] ? ' selesai' : '');
+    div.textContent = (i + 1) + '. ' + c.q;
+    if (st.sulit && st.sulit[i]) {
+      const tag = document.createElement('span');
+      tag.className = 'tag-sulit';
+      tag.textContent = 'sulit';
+      div.appendChild(tag);
+    }
+    box.appendChild(div);
+  });
+}
+
+/* ----- Tambah data (digabung, kartu yang sama dilewati) ----- */
+function bukaTambah(s) {
+  const box = document.getElementById('tambahBox' + s);
+  const buka = box.style.display === 'none';
+  box.style.display = buka ? 'flex' : 'none';
+  if (buka) document.getElementById('tambah' + s).focus();
+}
+function tambahData(s) {
+  const input = document.getElementById('tambah' + s);
+  const baru = parse(input.value);
+  if (!st || baru.length === 0) return;
+  const ada = new Set(st.cards.map(c => norm(c.q)));
+  baru.forEach(c => {
+    const k = norm(c.q);
+    if (!k || ada.has(k)) return;
+    ada.add(k);
+    st.cards.push(c);
+    st.done.push(false);
+  });
+  input.value = '';
+  document.getElementById('tambahBox' + s).style.display = 'none';
+  simpan();
+  lastSisa = null;
+  tampil();
+  if (document.getElementById('panel').classList.contains('terbuka')) segarkanPanel();
+}
+
+/* ----- Riwayat sesi (disimpan di browser HP ini) ----- */
+function ambilRiwayat() {
+  try { return JSON.parse(localStorage.getItem(KEY_RIWAYAT) || '[]'); } catch (e) { return []; }
+}
+function simpanRiwayat(list) {
+  try { localStorage.setItem(KEY_RIWAYAT, JSON.stringify(list)); } catch (e) {}
+}
+function labelTanggal(iso) {
+  try {
+    return new Date(iso).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  } catch (e) { return iso; }
+}
+// Menyimpan sesi yang sedang berjalan ke riwayat
+function arsipkan() {
+  if (!st || st.cards.length === 0) return;
+  const list = ambilRiwayat();
+  const now = new Date().toISOString();
+  list.unshift({ id: Date.now().toString(36), nama: 'データ ' + labelTanggal(now), tanggal: now, st: JSON.parse(JSON.stringify(st)) });
+  simpanRiwayat(list);
+}
+// Membuka sesi dari riwayat: sesi yang sedang berjalan diarsipkan dulu agar tidak hilang
+function bukaRiwayat(id) {
+  const pilihan = ambilRiwayat().find(x => x.id === id);
+  if (!pilihan) return;
+  arsipkan();
+  simpanRiwayat(ambilRiwayat().filter(x => x.id !== id));
+  st = pilihan.st;
+  st.salah = st.salah || 0;
+  st.salahList = st.salahList || {};
+  st.streak = 0;
+  st.sulit = st.sulit || {};
+  editId = null; hapusId = null;
+  sembunyiJawaban();
+  lastSisa = null;
+  const h = document.getElementById('hasil');
+  h.textContent = ''; h.className = 'hasil';
+  document.getElementById('panel').classList.remove('terbuka');
+  simpan();
+  tampil();
+}
+function mulaiUbahNama(id) {
+  editId = id; hapusId = null; clearTimeout(hapusTimer);
+  renderRiwayat();
+  const inp = document.querySelector('.nama-edit');
+  if (inp) inp.focus();
+}
+function simpanNama(id, inp) {
+  const nama = inp.value.trim();
+  const list = ambilRiwayat();
+  const e = list.find(x => x.id === id);
+  if (e && nama) e.nama = nama;
+  simpanRiwayat(list);
+  editId = null;
+  renderRiwayat();
+}
+// Hapus permanen: tekan dua kali dalam 3 detik
+function hapusRiwayat(id) {
+  if (hapusId !== id) {
+    hapusId = id; editId = null;
+    clearTimeout(hapusTimer);
+    hapusTimer = setTimeout(() => { hapusId = null; renderRiwayat(); }, 3000);
+    renderRiwayat();
+    return;
+  }
+  clearTimeout(hapusTimer);
+  hapusId = null;
+  simpanRiwayat(ambilRiwayat().filter(x => x.id !== id));
+  renderRiwayat();
+}
+function btnKecil(teks, warna, fn) {
+  const b = document.createElement('button');
+  b.className = 'btn btn-kecil btn-tetap';
+  b.style.setProperty('--c', warna);
+  b.innerHTML = '<svg class="ikon" viewBox="0 0 24 24" aria-hidden="true">' + IKON_KECIL[teks] + '</svg><span>' + teks + '</span>';
+  b.addEventListener('click', ev => { ev.stopPropagation(); fn(); });
+  return b;
+}
+function renderRiwayat() {
+  const box = document.getElementById('isiRiwayat');
+  if (!box) return;
+  const list = ambilRiwayat();
+  box.textContent = '';
+  if (list.length === 0) {
+    const p = document.createElement('div');
+    p.className = 'riwayat-kosong';
+    p.textContent = 'Belum ada riwayat';
+    box.appendChild(p);
+    return;
+  }
+  list.forEach(e => {
+    const item = document.createElement('div');
+    item.className = 'item-riwayat';
+    if (editId === e.id) {
+      const inp = document.createElement('input');
+      inp.className = 'cari nama-edit';
+      inp.value = e.nama;
+      inp.maxLength = 40;
+      inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') simpanNama(e.id, inp); });
+      item.appendChild(inp);
+      item.appendChild(btnKecil('保存', '#35e070', () => simpanNama(e.id, inp)));
+    } else {
+      const teks = document.createElement('div');
+      teks.className = 'riwayat-teks';
+      const nm = document.createElement('div');
+      nm.className = 'riwayat-nama';
+      nm.textContent = e.nama;
+      const info = document.createElement('div');
+      info.className = 'riwayat-info';
+      const sisa = e.st.done.filter(d => !d).length;
+      info.textContent = labelTanggal(e.tanggal) + ' · ' + e.st.cards.length + ' kartu · sisa ' + sisa;
+      teks.appendChild(nm);
+      teks.appendChild(info);
+      teks.addEventListener('click', () => bukaRiwayat(e.id));
+      const aksi = document.createElement('div');
+      aksi.className = 'riwayat-aksi';
+      aksi.appendChild(btnKecil('名前変更', '#b36bff', () => mulaiUbahNama(e.id)));
+      aksi.appendChild(btnKecil(hapusId === e.id ? 'もう一度' : '削除', '#ff4d4d', () => hapusRiwayat(e.id)));
+      item.appendChild(teks);
+      item.appendChild(aksi);
+    }
+    box.appendChild(item);
+  });
+}
+
+/* ===================== MUSIK ===================== */
+const KEY_MUSIK = 'recall_musik';
+const JUMLAH_SLOT = 5;
+const musikAudio = new Audio();
+let musikSlot = -1, musikPos = 0, musikArah = 1;
+let musikUrutan = [];
+let musikAcak = false, musikUlangi = false;
+let hapusSlotId = null, hapusSlotTimer = null;
+let hapusVideoId = null, hapusVideoTimer = null, videoSlot = -2;
+let seekAktif = false;
+const IKON_MUSIK = {
+  sebelum: '<path d="M6 5v14"/><path d="M18 5L8 12l10 7z"/>',
+  putar: '<path d="M7 4l13 8-13 8z"/>',
+  jeda: '<path d="M7 5h4v14H7z"/><path d="M13 5h4v14h-4z"/>',
+  berikut: '<path d="M6 5l10 7-10 7z"/><path d="M18 5v14"/>',
+  bunyi: '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>',
+  bisu: '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M23 9l-6 6M17 9l6 6"/>',
+  nada: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  gambar: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',
+  hapus: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/>',
+  video: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3z"/>'
+};
+function ikonSvg(nama) {
+  return '<svg class="ikon" viewBox="0 0 24 24" aria-hidden="true">' + IKON_MUSIK[nama] + '</svg>';
+}
+function ambilMusik() {
+  try {
+    const a = JSON.parse(localStorage.getItem(KEY_MUSIK) || '[]');
+    return Array.from({ length: JUMLAH_SLOT }, (_, i) => a[i] || null);
+  } catch (e) { return Array.from({ length: JUMLAH_SLOT }, () => null); }
+}
+function simpanMusik(a) { try { localStorage.setItem(KEY_MUSIK, JSON.stringify(a)); } catch (e) {} }
+function slotTerisi() { return ambilMusik().map((x, i) => (x ? i : -1)).filter(i => i >= 0); }
+function hapusCache(key) {
+  if (urlCache[key]) { URL.revokeObjectURL(urlCache[key]); delete urlCache[key]; }
+}
+function setPesanMusik(teks, kelas) {
+  const p = document.getElementById('pesanMusik');
+  p.textContent = teks;
+  p.className = 'pesan-latar ' + kelas;
+}
+function menitDetik(d) { return Math.floor(d / 60) + ' menit ' + Math.round(d % 60) + ' detik'; }
+function cekLagu(f) {
+  return new Promise(res => {
+    const mb = f.size / (1024 * 1024);
+    if (mb > 10) return res({ error: f.name + ': ukuran ' + mb.toFixed(1) + ' MB, maksimal 10 MB.' });
+    const a = new Audio();
+    const url = URL.createObjectURL(f);
+    const selesai = r => { URL.revokeObjectURL(url); res(r); };
+    a.preload = 'metadata';
+    a.onloadedmetadata = () => {
+      const d = a.duration;
+      if (mb > 6 || d > 480) return selesai({ warn: f.name + ': ' + mb.toFixed(1) + ' MB, ' + menitDetik(d) + '. Disarankan di bawah 6 MB dan 8 menit.' });
+      selesai({});
+    };
+    a.onerror = () => selesai({ error: f.name + ': format audio tidak bisa dibaca.' });
+    a.src = url;
+  });
+}
+async function unggahLagu(i, input) {
+  const f = input.files[0];
+  input.value = '';
+  if (!f) return;
+  const c = await cekLagu(f);
+  if (c.error) return setPesanMusik(c.error, 'salah');
+  try { await idbSimpan('m' + i + '-lagu', f); }
+  catch (e) { return setPesanMusik('Gagal menyimpan lagu. Penyimpanan HP mungkin penuh.', 'salah'); }
+  hapusCache('m' + i + '-lagu');
+  const a = ambilMusik();
+  a[i] = { nama: f.name.replace(/\.[^.]+$/, ''), sampul: a[i] ? a[i].sampul : false, video: a[i] ? a[i].video : false };
+  simpanMusik(a);
+  if (musikSlot === i) { musikAudio.pause(); musikSlot = -1; }
+  renderSlotEditor();
+  renderBar();
+  if (c.warn) setPesanMusik('Tersimpan, tetapi: ' + c.warn, 'peringatan');
+  else setPesanMusik('Lagu tersimpan.', 'sukses');
+}
+async function unggahSampul(i, input) {
+  const f = input.files[0];
+  input.value = '';
+  if (!f) return;
+  if (f.size / (1024 * 1024) > 5) return setPesanMusik('Sampul maksimal 5 MB.', 'salah');
+  const a = ambilMusik();
+  if (!a[i]) return setPesanMusik('Isi lagu dulu sebelum memasang sampul.', 'salah');
+  try { await idbSimpan('m' + i + '-sampul', f); }
+  catch (e) { return setPesanMusik('Gagal menyimpan sampul.', 'salah'); }
+  hapusCache('m' + i + '-sampul');
+  a[i].sampul = true;
+  simpanMusik(a);
+  renderSlotEditor();
+  renderBar();
+  setPesanMusik('Sampul tersimpan.', 'sukses');
+}
+// Hapus permanen satu slot: tekan dua kali dalam 3 detik
+function hapusSlot(i) {
+  if (hapusSlotId !== i) {
+    hapusSlotId = i;
+    clearTimeout(hapusSlotTimer);
+    hapusSlotTimer = setTimeout(() => { hapusSlotId = null; renderSlotEditor(); }, 3000);
+    renderSlotEditor();
+    return;
+  }
+  clearTimeout(hapusSlotTimer);
+  hapusSlotId = null;
+  ['lagu', 'sampul', 'video'].forEach(s => {
+    hapusCache('m' + i + '-' + s);
+    idbHapus('m' + i + '-' + s).catch(() => {});
+  });
+  const a = ambilMusik();
+  a[i] = null;
+  simpanMusik(a);
+  if (musikSlot === i) { musikAudio.pause(); musikSlot = -1; }
+  renderSlotEditor();
+  renderBar();
+}
+function tombolKecil(teks, ikonNama, warna, fn) {
+  const b = document.createElement('button');
+  b.className = 'btn btn-kecil btn-tetap';
+  b.style.setProperty('--c', warna);
+  b.innerHTML = ikonSvg(ikonNama) + '<span>' + teks + '</span>';
+  b.addEventListener('click', ev => { ev.stopPropagation(); fn(); });
+  return b;
+}
+function renderSlotEditor() {
+  const box = document.getElementById('daftarSlot');
+  if (!box) return;
+  box.textContent = '';
+  const a = ambilMusik();
+  a.forEach((m, i) => {
+    const row = document.createElement('div');
+    row.className = 'item-latar item-slot';
+
+    const kotak = document.createElement('div');
+    kotak.className = 'thumb thumb-nomor';
+    if (m && m.sampul) {
+      urlMedia('m' + i + '-sampul').then(u => { if (u) kotak.appendChild(buatGambar(u)); }).catch(() => {});
+    } else {
+      kotak.textContent = String(i + 1);
+    }
+    const info = document.createElement('div');
+    info.className = 'latar-info';
+    const nm = document.createElement('div');
+    nm.textContent = 'Slot ' + (i + 1) + ' · ' + (m ? m.nama : 'kosong');
+    info.appendChild(nm);
+    row.appendChild(kotak);
+    row.appendChild(info);
+
+    const inLagu = document.createElement('input');
+    inLagu.type = 'file'; inLagu.accept = 'audio/*'; inLagu.className = 'file-sembunyi';
+    inLagu.addEventListener('change', () => unggahLagu(i, inLagu));
+    const inSampul = document.createElement('input');
+    inSampul.type = 'file'; inSampul.accept = 'image/*'; inSampul.className = 'file-sembunyi';
+    inSampul.addEventListener('change', () => unggahSampul(i, inSampul));
+    row.appendChild(inLagu);
+    row.appendChild(inSampul);
+    const inVideo = document.createElement('input');
+    inVideo.type = 'file'; inVideo.accept = 'video/mp4,video/webm'; inVideo.className = 'file-sembunyi';
+    inVideo.addEventListener('change', () => unggahVideo(i, inVideo));
+    row.appendChild(inVideo);
+
+    const aksi = document.createElement('div');
+    aksi.className = 'aksi-slot';
+    aksi.appendChild(tombolKecil('Lagu', 'nada', '#5ce1ff', () => inLagu.click()));
+    aksi.appendChild(tombolKecil('Sampul', 'gambar', '#b36bff', () => {
+      if (!m) return setPesanMusik('Isi lagu dulu sebelum memasang sampul.', 'salah');
+      inSampul.click();
+    }));
+    aksi.appendChild(tombolKecil(m && m.video ? (hapusVideoId === i ? 'Yakin?' : 'Hapus vid') : 'Video', 'video', '#ffd166', () => {
+      if (!m) return setPesanMusik('Isi lagu dulu sebelum memasang video.', 'salah');
+      if (m.video) return hapusVideo(i);
+      inVideo.click();
+    }));
+    if (m) {
+      aksi.appendChild(tombolKecil(hapusSlotId === i ? 'もう一度' : '削除', 'hapus', '#ff4d4d', () => hapusSlot(i)));
+    }
+    row.appendChild(aksi);
+    box.appendChild(row);
+  });
+}
+
+/* ----- Mode fokus ----- */
+let modeFokus = false;
+function toggleFokus() {
+  modeFokus = !modeFokus;
+  document.body.classList.toggle('mode-fokus', modeFokus);
+  const b = document.getElementById('btnFokus');
+  if (b) { b.classList.toggle('aktif', modeFokus); b.setAttribute('aria-pressed', String(modeFokus)); }
+}
+const barMusikEl = document.getElementById('barMusik');
+if (barMusikEl) barMusikEl.addEventListener('click', e => {
+  if (e.target === barMusikEl || e.target.id === 'videoLatar') musikPutarJeda();
+});
+
+/* ----- Video latar per lagu ----- */
+function pasangVideoLatar(i, paksa) {
+  const v = document.getElementById('videoLatar');
+  if (!v) return;
+  if (i === videoSlot && !paksa) return;
+  videoSlot = i;
+  v.muted = true;
+  const cari = i >= 0 ? urlMedia('m' + i + '-video').catch(() => null) : Promise.resolve(null);
+  cari.then(url => {
+    if (videoSlot !== i) return;
+    if (!url) { v.pause(); v.removeAttribute('src'); v.load(); v.hidden = true; return; }
+    v.src = url;
+    v.hidden = false;
+    if (!musikAudio.paused) v.play().catch(() => {});
+  });
+}
+async function unggahVideo(i, input) {
+  const f = input.files[0];
+  input.value = '';
+  if (!f) return;
+  const a = ambilMusik();
+  if (!a[i]) return setPesanMusik('Isi lagu dulu sebelum memasang video.', 'salah');
+  const formatOk = /^video\/(mp4|webm)$/.test(f.type) || /\.(mp4|webm)$/i.test(f.name);
+  if (!formatOk) return setPesanMusik('Pilih video format MP4 atau WebM.', 'salah');
+  if (f.size / (1024 * 1024) > 10) return setPesanMusik('Video maksimal 10 MB.', 'salah');
+  try { await idbSimpan('m' + i + '-video', f); }
+  catch (e) { return setPesanMusik('Gagal menyimpan video. Penyimpanan HP mungkin penuh.', 'salah'); }
+  hapusCache('m' + i + '-video');
+  a[i].video = true;
+  simpanMusik(a);
+  renderSlotEditor();
+  if (musikSlot === i) pasangVideoLatar(i, true);
+  setPesanMusik('Video tersimpan.', 'sukses');
+}
+function hapusVideo(i) {
+  if (hapusVideoId !== i) {
+    hapusVideoId = i;
+    clearTimeout(hapusVideoTimer);
+    hapusVideoTimer = setTimeout(() => { hapusVideoId = null; renderSlotEditor(); }, 3000);
+    renderSlotEditor();
+    return;
+  }
+  clearTimeout(hapusVideoTimer);
+  hapusVideoId = null;
+  hapusCache('m' + i + '-video');
+  idbHapus('m' + i + '-video').catch(() => {});
+  const a = ambilMusik();
+  if (a[i]) { a[i].video = false; simpanMusik(a); }
+  if (musikSlot === i) pasangVideoLatar(i, true);
+  renderSlotEditor();
+  setPesanMusik('Video dihapus.', 'sukses');
+}
+
+/* ----- Lagu bawaan (bisa dihapus dan dipulihkan) ----- */
+const KEY_BAWAAN = 'recall_bawaan_v1';
+const LAGU_BAWAAN = [
+  { nama: 'Shinobu', dasar: 'bawaan/slot1' },
+  { nama: 'Reze', dasar: 'bawaan/slot2' },
+  { nama: 'Tenki no Ko', dasar: 'bawaan/slot3' },
+  { nama: 'Your Name', dasar: 'bawaan/slot4' },
+  { nama: 'Spirited Away', dasar: 'bawaan/slot5' }
+];
+async function ambilBerkas(url, tipe) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('gagal memuat ' + url);
+  return new Blob([await r.blob()], { type: tipe });
+}
+async function pasangBawaan(i) {
+  const b = LAGU_BAWAAN[i];
+  const lagu = await ambilBerkas(b.dasar + '-lagu.mp3', 'audio/mpeg');
+  const sampul = await ambilBerkas(b.dasar + '-sampul.jpg', 'image/jpeg');
+  const video = await ambilBerkas(b.dasar + '-video-landscape.mp4', 'video/mp4');
+  await idbSimpan('m' + i + '-lagu', lagu);
+  await idbSimpan('m' + i + '-sampul', sampul);
+  await idbSimpan('m' + i + '-video', video);
+  ['lagu', 'sampul', 'video'].forEach(s => hapusCache('m' + i + '-' + s));
+  const a = ambilMusik();
+  a[i] = { nama: b.nama, sampul: true, video: true };
+  simpanMusik(a);
+}
+// Saat pertama dibuka: isi slot yang masih kosong. Sekali saja, jadi slot yang sudah dihapus tidak terisi lagi.
+async function seedBawaan() {
+  try { if (localStorage.getItem(KEY_BAWAAN) === '1') return; } catch (e) { return; }
+  let gagal = false;
+  for (let i = 0; i < JUMLAH_SLOT; i++) {
+    if (ambilMusik()[i]) continue;
+    try { await pasangBawaan(i); } catch (e) { gagal = true; }
+  }
+  if (!gagal) { try { localStorage.setItem(KEY_BAWAAN, '1'); } catch (e) {} }
+  renderSlotEditor();
+  renderBar();
+}
+// Ganti semua slot dengan bawaan. Tekan dua kali dalam 3 detik.
+let pulihkanSiap = false, pulihkanTimer = null;
+async function pulihkanBawaan() {
+  if (!pulihkanSiap) {
+    pulihkanSiap = true;
+    clearTimeout(pulihkanTimer);
+    pulihkanTimer = setTimeout(() => { pulihkanSiap = false; }, 3000);
+    return setPesanMusik('Tekan sekali lagi untuk mengganti semua slot dengan lagu bawaan.', 'peringatan');
+  }
+  clearTimeout(pulihkanTimer);
+  pulihkanSiap = false;
+  musikAudio.pause();
+  musikSlot = -1;
+  setPesanMusik('Memulihkan lagu bawaan…', 'peringatan');
+  try {
+    for (let i = 0; i < JUMLAH_SLOT; i++) await pasangBawaan(i);
+    try { localStorage.setItem(KEY_BAWAAN, '1'); } catch (e) {}
+    setPesanMusik('Lagu bawaan dipulihkan.', 'sukses');
+  } catch (e) {
+    setPesanMusik('Gagal memulihkan bawaan. Periksa koneksi lalu coba lagi.', 'salah');
+  }
+  renderSlotEditor();
+  renderBar();
+}
+
+/* ----- Pemutaran ----- */
+function hitungUrutan() {
+  musikUrutan = slotTerisi();
+  if (musikPos >= musikUrutan.length) musikPos = 0;
+}
+async function putarSlot(i) {
+  const url = await urlMedia('m' + i + '-lagu');
+  if (!url) return;
+  hitungUrutan();
+  musikSlot = i;
+  musikPos = Math.max(0, musikUrutan.indexOf(i));
+  musikAudio.src = url;
+  musikAudio.loop = musikUlangi;
+  pasangVideoLatar(i);
+  siapkanAnalyser();
+  musikAudio.play().catch(() => {});
+  renderBar();
+}
+function musikPutarJeda() {
+  if (musikSlot < 0) {
+    const u = slotTerisi();
+    if (u.length) putarSlot(u[0]);
+    return;
+  }
+  siapkanAnalyser();
+  if (musikAudio.paused) musikAudio.play().catch(() => {});
+  else musikAudio.pause();
+  renderBar();
+}
+// Urutan memantul: 1→2→3→4→5→4→3→2→1 lalu berulang
+function langkahPola(pos, d) {
+  const n = musikUrutan.length;
+  if (n <= 1) return { j: 0, arah: d };
+  let j = pos + d, a = d;
+  if (j >= n) { j = n - 2; a = -1; }
+  else if (j < 0) { j = 1; a = 1; }
+  return { j: j, arah: a };
+}
+function slotBerikutDari(d, simpanArah) {
+  hitungUrutan();
+  const n = musikUrutan.length;
+  if (n === 0) return -1;
+  if (musikAcak && n > 1) {
+    let k;
+    do { k = Math.floor(Math.random() * n); } while (k === musikPos);
+    musikPos = k;
+    return musikUrutan[k];
+  }
+  const r = langkahPola(musikPos, d);
+  musikPos = r.j;
+  if (simpanArah) musikArah = r.arah;
+  return musikUrutan[r.j];
+}
+function musikBerikut() { const s = slotBerikutDari(musikArah, true); if (s >= 0) putarSlot(s); }
+function musikSebelum() { const s = slotBerikutDari(-musikArah, false); if (s >= 0) putarSlot(s); }
+musikAudio.addEventListener('ended', () => { const s = slotBerikutDari(musikArah, true); if (s >= 0) putarSlot(s); });
+musikAudio.addEventListener('play', () => { const v = document.getElementById('videoLatar'); if (v && v.src) v.play().catch(() => {}); renderBar(); });
+musikAudio.addEventListener('pause', () => { const v = document.getElementById('videoLatar'); if (v) v.pause(); renderBar(); });
+function toggleAcak() { musikAcak = !musikAcak; renderBar(); }
+function toggleUlangi() { musikUlangi = !musikUlangi; musikAudio.loop = musikUlangi; renderBar(); }
+function toggleBisu() { musikAudio.muted = !musikAudio.muted; renderBar(); }
+
+/* ----- Durasi dan geser ----- */
+function formatWaktu(d) {
+  if (!isFinite(d) || d < 0) return '0:00';
+  const m = Math.floor(d / 60), s = Math.floor(d % 60);
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+function updateDurasi() {
+  const d = musikAudio.duration, t = musikAudio.currentTime;
+  document.getElementById('waktuSkrg').textContent = formatWaktu(t);
+  document.getElementById('waktuTotal').textContent = formatWaktu(d);
+  const r = (isFinite(d) && d > 0) ? Math.min(1, t / d) : 0;
+  document.getElementById('isiDurasi').style.width = (r * 100) + '%';
+  document.getElementById('kucingDurasi').style.left = (r * 100) + '%';}
+musikAudio.addEventListener('timeupdate', updateDurasi);
+musikAudio.addEventListener('loadedmetadata', updateDurasi);
+(function pasangGeserDurasi() {
+  const track = document.getElementById('trackDurasi');
+  function seekDari(e) {
+    const rect = track.getBoundingClientRect();
+    const r = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    if (isFinite(musikAudio.duration)) musikAudio.currentTime = r * musikAudio.duration;
+    updateDurasi();
+  }
+  track.addEventListener('pointerdown', e => { seekAktif = true; track.setPointerCapture(e.pointerId); seekDari(e); });
+  track.addEventListener('pointermove', e => { if (seekAktif) seekDari(e); });
+  track.addEventListener('pointerup', () => { seekAktif = false; });
+  track.addEventListener('pointercancel', () => { seekAktif = false; });
+})();
+
+/* ----- Bar musik ----- */
+function renderBar() {
+  const bar = document.getElementById('barMusik');
+  const btnTampil = document.getElementById('btnTampilMusik');
+  const ada = slotTerisi().length > 0;
+  if (!ada) { musikAudio.pause(); musikSlot = -1; }
+  const sembunyi = bar.classList.contains('sembunyi');
+  bar.style.display = ada ? 'flex' : 'none';
+  btnTampil.style.display = (ada && sembunyi) ? 'flex' : 'none';
+  document.body.classList.toggle('ada-bar', ada && !sembunyi);
+  if (!ada) return;
+
+  const baris = document.getElementById('barSlot');
+  const wrap = document.getElementById('barSlotWrap');
+  const a = ambilMusik();
+  baris.textContent = '';
+  for (let i = 0; i < JUMLAH_SLOT; i++) {
+    const m = a[i];
+    const b = document.createElement('button');
+    b.className = 'bar-kotak' + (m ? ' isi' : ' kosong') + (i === musikSlot ? ' aktif' : '');
+    b.textContent = (!m || !m.sampul) ? String(i + 1) : '';
+    if (m && m.sampul) {
+      urlMedia('m' + i + '-sampul').then(u => { if (u) b.style.backgroundImage = 'url("' + u + '")'; }).catch(() => {});
+    }
+    if (m) b.addEventListener('click', () => { if (i === musikSlot) musikPutarJeda(); else putarSlot(i); });
+    baris.appendChild(b);
+  }
+  // Baris kotak bergeser agar kotak yang aktif selalu di tengah
+  const s = musikSlot >= 0 ? musikSlot : 0;
+  baris.style.transform = 'translateX(' + (wrap.clientWidth / 2 - (s * 58 + 24)) + 'px)';
+
+  const piring = document.getElementById('btnPutar');
+  piring.classList.toggle('main', musikSlot >= 0 && !musikAudio.paused);
+  piring.classList.toggle('kosong', musikSlot < 0);
+  const label = document.getElementById('labelPiringan');
+  label.style.backgroundImage = '';
+  if (musikSlot >= 0 && a[musikSlot] && a[musikSlot].sampul) {
+    urlMedia('m' + musikSlot + '-sampul').then(u => { if (u) label.style.backgroundImage = 'url("' + u + '")'; }).catch(() => {});
+  }
+  document.getElementById('btnAcak').classList.toggle('on', musikAcak);
+  document.getElementById('btnUlangi').classList.toggle('on', musikUlangi);
+  const btnBisu = document.getElementById('btnBisu');
+  btnBisu.innerHTML = ikonSvg(musikAudio.muted ? 'bisu' : 'bunyi');
+  btnBisu.classList.toggle('on', musikAudio.muted);
+  updateDurasi();
+}
+function sembunyiBar(sembunyi) {
+  document.getElementById('barMusik').classList.toggle('sembunyi', sembunyi);
+  renderBar();
+}
+
+/* ----- Warna bar mengikuti latar ----- */
+function hexKeRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+// Warna bar dipilih dari palet neon yang paling dekat dengan warna dominan latar
+const PALET_NEON = [
+  { hex: '#c084fc', hue: 275 }, // ungu
+  { hex: '#60a5fa', hue: 215 }, // biru
+  { hex: '#f472b6', hue: 330 }, // pink
+  { hex: '#22d3ee', hue: 188 }, // cyan
+  { hex: '#facc15', hue: 48 }   // kuning
+];
+let aksenHex = '#22d3ee';
+function setAksen(rgb) {
+  const r = rgb[0] / 255, g = rgb[1] / 255, b = rgb[2] / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  const sat = max === 0 ? 0 : d / max;
+  let pilih = PALET_NEON[3].hex;
+  if (d > 0 && sat >= 0.15) {
+    let h;
+    if (max === r) h = 60 * (((g - b) / d) % 6);
+    else if (max === g) h = 60 * ((b - r) / d + 2);
+    else h = 60 * ((r - g) / d + 4);
+    if (h < 0) h += 360;
+    let jarakTerdekat = 999;
+    PALET_NEON.forEach(p => {
+      const sel = Math.abs(h - p.hue);
+      const jarak = Math.min(sel, 360 - sel);
+      if (jarak < jarakTerdekat) { jarakTerdekat = jarak; pilih = p.hex; }
+    });
+  }
+  aksenHex = pilih;
+  document.getElementById('barMusik').style.setProperty('--aksen', pilih);
+}
+function ambilWarnaLatar() {
+  const pilih = ambilPilihan();
+  if (pilih.indexOf('w:') === 0) return hexKeRgb(pilih.slice(2));
+  const kelas = window.matchMedia('(orientation: portrait)').matches ? '.v-potret' : '.v-land';
+  const el = document.querySelector('#bg .lapis.aktif ' + kelas);
+  if (!el) return null;
+  try {
+    const w = el.videoWidth || el.naturalWidth, h = el.videoHeight || el.naturalHeight;
+    if (!w || !h) return null;
+    const c = document.createElement('canvas');
+    c.width = 8; c.height = 8;
+    const g = c.getContext('2d');
+    g.drawImage(el, 0, 0, 8, 8);
+    const d = g.getImageData(0, 0, 8, 8).data;
+    let r = 0, gg = 0, b = 0, n = 0;
+    for (let k = 0; k < d.length; k += 4) { r += d[k]; gg += d[k + 1]; b += d[k + 2]; n++; }
+    return [Math.round(r / n), Math.round(gg / n), Math.round(b / n)];
+  } catch (e) { return null; }
+}
+function ambilAksen() {
+  if (!document.body.classList.contains('ada-bar')) return;
+  const rgb = ambilWarnaLatar();
+  if (rgb) setAksen(rgb);
+}
+
+/* ----- Visualizer gelombang (mengikuti suara lagu) ----- */
+let audioCtx = null, analyser = null, dataWave = null;
+function siapkanAnalyser() {
+  try {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AC();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      audioCtx.createMediaElementSource(musikAudio).connect(analyser);
+      analyser.connect(audioCtx.destination);
+      dataWave = new Uint8Array(analyser.fftSize);
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  } catch (e) { audioCtx = null; analyser = null; }
+}
+let vizT = 0;
+function gambarViz() {
+  requestAnimationFrame(gambarViz);
+  if (!document.body.classList.contains('ada-bar')) return;
+  const cv = document.getElementById('vizCanvas');
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+  }
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  vizT += 0.035;
+  const main = !musikAudio.paused;
+  const nyata = main && analyser && dataWave;
+  if (nyata) analyser.getByteTimeDomainData(dataWave);
+  const N = 120;
+  for (let pass = 0; pass < 2; pass++) {
+    g.beginPath();
+    for (let k = 0; k <= N; k++) {
+      const x = (k / N) * w;
+      let v;
+      if (nyata) v = (dataWave[Math.floor((k / N) * (dataWave.length - 1))] - 128) / 128;
+      else if (main) v = Math.sin(k * 0.31 + vizT * 5) * 0.55 * Math.sin(k * 0.05 + vizT * 2);
+      else v = Math.sin(k * 0.2 + vizT) * 0.015;
+      const y = h / 2 + (pass === 0 ? v : -v * 0.6) * (h / 2 - 3);
+      if (k === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.strokeStyle = aksenHex;
+    g.globalAlpha = pass === 0 ? 0.9 : 0.35;
+    g.lineWidth = pass === 0 ? 1.2 : 0.8;
+    g.shadowColor = aksenHex;
+    g.shadowBlur = pass === 0 ? 6 : 4;
+    g.stroke();
+  }
+  g.globalAlpha = 1;
+  g.shadowBlur = 0;
+}
+function mulaiViz() { requestAnimationFrame(gambarViz); }
+
 window.addEventListener('orientationchange', mainkanVideo);
 window.addEventListener('resize', mainkanVideo);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) mainkanVideo(); });
 
 /* ----- Mulai aplikasi ----- */
 try {
-  const b = parseInt(localStorage.getItem(BGKEY) || '0', 10);
-  bg = isNaN(b) ? 0 : b % BG_COUNT;
-} catch (e) { bg = 0; }
-pasangBg();
-
-try {
   const tersimpan = localStorage.getItem(KEY);
   if (tersimpan) {
     st = JSON.parse(tersimpan);
     st.salah = st.salah || 0;
     st.salahList = st.salahList || {};
+    st.streak = st.streak || 0;
+    st.sulit = st.sulit || {};
   }
 } catch (e) { st = null; }
+tabAktif = st ? 'daftar' : 'riwayat';
+gantiTab(tabAktif);
+pasangLatar();
+renderSlotEditor();
+renderBar();
+seedBawaan();
+setInterval(ambilAksen, 2500);
+mulaiViz();
 tampil();
 </script>
 <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => {}); }</script>
 </body>
 </html>
+
+</body></html>
